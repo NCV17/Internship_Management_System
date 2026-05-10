@@ -63,6 +63,10 @@ Hệ thống có 3 vai trò chính với các nghiệp vụ riêng:
 
 ## 🚀 Trạng Thái Dự Án Hiện Tại
 
-- Đã hoàn thiện **Module Authentication**: Đăng nhập, Đăng ký (cho Student), Xác thực JWT, Phân quyền Route (Protectected routes).
-- Đã hoàn thiện thiết kế layout giao diện Dashboard cơ bản cho cả 3 Role.
-- Các bước tiếp theo: Phát triển tính năng CRUD (Thêm/Sửa/Xóa) cho Admin quản lý danh sách sinh viên/giảng viên, tính năng nộp báo cáo và quản lý đồ án thực tập.
+- **Authentication & Authorization**: Đã hoàn thiện đăng nhập, đăng ký sinh viên, xác thực qua JWT, và bảo vệ các routes tùy theo Role (Admin, Lecturer, Student).
+- **Giao diện (UI/UX)**: Đã hoàn thiện thiết kế Dashboard cơ bản cho 3 đối tượng người dùng. Giao diện Login và Register đã được Việt hóa 100%, thiết kế lại theo hướng thanh lịch, loại bỏ các icon thừa trong ô input. Khắc phục triệt để lỗi "mất focus" (khiến con trỏ chuột bị văng ra) khi gõ Form Đăng ký do cơ chế render của React.
+- **Database Connection**: 
+  - Đã cấu hình Backend kết nối ổn định tới SQL Server (Instance: `NCV17\SQLEXPRESS`) qua `msnodesqlv8` và cơ chế **Windows Authentication** thông qua `ODBC Driver 17 for SQL Server` thay vì dùng tài khoản `sa` truyền thống.
+  - Fix lỗi `dotenv` không nhận diện biến môi trường mới bằng `{ override: true }` và bắt ép kết nối (fail-fast) ngay lúc khởi động `server.js`.
+- **Database Schema & Seeding**: Đã cập nhật file `database.sql` định nghĩa chuẩn các bảng (Users, Students, Lecturers, Companies, InternshipRegistrations, Assignments, WeeklyReports, FinalReports, Evaluations, InternshipProgress) với đầy đủ Constraint. Đã có script Node.js mã hóa Bcrypt mật khẩu của Admin.
+- **Tiếp theo**: Bắt đầu triển khai các API và tính năng CRUD (Thêm/Sửa/Xóa) cho Admin để quản lý danh sách sinh viên/giảng viên, công ty, phân công thực tập, và nộp báo cáo.

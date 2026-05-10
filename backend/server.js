@@ -2,8 +2,16 @@ require("dotenv").config({ override: true });
 const express = require("express");
 const cors = require("cors");
 
-const authRoutes = require("./routes/auth.routes");
-const errorHandler = require("./middleware/error.middleware");
+const authRoutes     = require("./routes/auth.routes");
+const lecturerRoutes = require("./routes/lecturer.routes");
+const studentRoutes  = require("./routes/student.routes");
+const periodRoutes   = require("./routes/period.routes");
+const companyRoutes  = require("./routes/company.routes");
+const assignmentRoutes = require("./routes/assignment.routes");
+const dashboardRoutes = require("./routes/dashboard.routes");
+const reportRoutes   = require("./routes/report.routes");
+const studentInternshipRoutes = require("./routes/studentInternship.routes");
+const errorHandler   = require("./middleware/error.middleware");
 
 const app = express();
 
@@ -27,7 +35,15 @@ app.get("/", (req, res) => {
   });
 });
 
-app.use("/api/auth", authRoutes);
+app.use("/api/auth",      authRoutes);
+app.use("/api/lecturers", lecturerRoutes);
+app.use("/api/students",  studentRoutes);
+app.use("/api/periods",   periodRoutes);
+app.use("/api/companies", companyRoutes);
+app.use("/api/assignments", assignmentRoutes);
+app.use("/api/admin/dashboard", dashboardRoutes);
+app.use("/api/reports", reportRoutes);
+app.use("/api/student", studentInternshipRoutes);
 
 // ─── 404 HANDLER ──────────────────────────────────────────────────────────────
 app.use((req, res) => {
