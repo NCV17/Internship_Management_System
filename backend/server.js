@@ -3,6 +3,18 @@ const express = require("express");
 const cors = require("cors");
 
 const authRoutes = require("./routes/auth.routes");
+const lecturerRoutes = require("./routes/lecturer.routes");
+const studentRoutes = require("./routes/student.routes");
+const periodRoutes = require("./routes/period.routes");
+const companyRoutes = require("./routes/company.routes");
+const assignmentRoutes = require("./routes/assignment.routes");
+const dashboardRoutes = require("./routes/dashboard.routes");
+const reportRoutes = require("./routes/report.routes");
+const studentInternshipRoutes = require("./routes/studentInternship.routes");
+const lecturerDashboardRoutes = require("./routes/lecturerDashboard.routes");
+const lecturerReportRoutes = require("./routes/lecturerReport.routes");
+const lecturerProfileRoutes = require("./routes/lecturerProfile.routes");
+const studentProfileRoutes = require("./routes/studentProfile.routes");
 const errorHandler = require("./middleware/error.middleware");
 
 const app = express();
@@ -19,6 +31,10 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve static files from uploads
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
 app.get("/", (req, res) => {
   res.json({
@@ -28,6 +44,18 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/lecturers", lecturerRoutes);
+app.use("/api/students", studentRoutes);
+app.use("/api/periods", periodRoutes);
+app.use("/api/companies", companyRoutes);
+app.use("/api/assignments", assignmentRoutes);
+app.use("/api/admin/dashboard", dashboardRoutes);
+app.use("/api/reports", reportRoutes);
+app.use("/api/student", studentInternshipRoutes);
+app.use("/api/lecturer", lecturerDashboardRoutes);
+app.use("/api/lecturer/workflow", lecturerReportRoutes);
+app.use("/api/lecturer/profile", lecturerProfileRoutes);
+app.use("/api/student/profile", studentProfileRoutes);
 
 // ─── 404 HANDLER ──────────────────────────────────────────────────────────────
 app.use((req, res) => {
