@@ -6,24 +6,22 @@ const {
   getLecturerStudents,
   getLecturerStudentDetail,
   getLecturerFilterOptions,
+  reviewWeeklyReport,
+  evaluateStudent,
+  getEvaluationStudents,
 } = require("../controllers/lecturerDashboard.controller");
 
 const authMiddleware = require("../middleware/auth.middleware");
 const roleMiddleware = require("../middleware/role.middleware");
 
-// All routes: auth + LECTURER role
 router.use(authMiddleware, roleMiddleware("LECTURER"));
 
-// GET /api/lecturer/dashboard
 router.get("/dashboard", getLecturerDashboard);
-
-// GET /api/lecturer/students
 router.get("/students", getLecturerStudents);
-
-// GET /api/lecturer/students/:id
 router.get("/students/:id", getLecturerStudentDetail);
-
-// GET /api/lecturer/filter-options
 router.get("/filter-options", getLecturerFilterOptions);
+router.put("/students/:studentId/reports/weekly/:reportId/review", reviewWeeklyReport);
+router.post("/students/:studentId/evaluate", evaluateStudent);
+router.get("/evaluations", getEvaluationStudents);
 
 module.exports = router;

@@ -53,14 +53,14 @@ export const lecturerAPI = {
 
 // ─── STUDENT API ───────────────────────────────────────────────────────────
 export const studentAPI = {
-  getAll:                (params)     => api.get("/students", { params }),
-  getById:               (id)         => api.get(`/students/${id}`),
-  create:                (data)       => api.post("/students", data),
-  update:                (id, data)   => api.put(`/students/${id}`, data),
-  updateStatus:          (id, data)   => api.patch(`/students/${id}/status`, data),
-  updateAccountStatus:   (id, data)   => api.patch(`/students/${id}/account-status`, data),
-  delete:                (id)         => api.delete(`/students/${id}`),
-  exportExcel:           (params)     => api.get("/students/export", { params, responseType: "blob" }),
+  getAll: (params) => api.get("/students", { params }),
+  getById: (id) => api.get(`/students/${id}`),
+  create: (data) => api.post("/students", data),
+  update: (id, data) => api.put(`/students/${id}`, data),
+  updateStatus: (id, data) => api.patch(`/students/${id}/status`, data),
+  updateAccountStatus: (id, data) => api.patch(`/students/${id}/account-status`, data),
+  delete: (id) => api.delete(`/students/${id}`),
+  exportExcel: (params) => api.get("/students/export", { params, responseType: "blob" }),
 };
 
 // ─── PERIOD API ────────────────────────────────────────────────────────────
@@ -115,32 +115,43 @@ export const reportAPI = {
 
 // ─── STUDENT INTERNSHIP API ────────────────────────────────────────────────
 export const studentInternshipAPI = {
-  getOpenPeriod:      ()       => api.get("/student/open-period"),
-  getCompanies:       ()       => api.get("/student/companies"),
-  getMyRegistration:  ()       => api.get("/student/my-registration"),
-  getMyInternshipInfo:()       => api.get("/student/my-internship-info"),
-  registerInternship: (data)   => api.post("/student/register-internship", data),
-  getReports:         ()       => api.get("/student/reports"),
-  submitReport:       (data)   => api.post("/student/reports", data, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  getOpenPeriod: () => api.get("/student/open-period"),
+  getCompanies: () => api.get("/student/companies"),
+  getMyRegistration: () => api.get("/student/my-registration"),
+  getMyInternshipInfo: () => api.get("/student/my-internship-info"),
+  registerInternship: (data) => api.post("/student/register-internship", data),
+  getReports: () => api.get("/student/reports"),
+  submitReport: (data) => api.post("/student/reports", data, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  getEvaluationResult: () => api.get("/student/evaluation-result"),
 };
 
 // ─── LECTURER DASHBOARD & STUDENTS API ────────────────────────────────────
 export const lecturerDashboardAPI = {
-  getDashboard:       ()       => api.get("/lecturer/dashboard"),
-  getStudents:        (params) => api.get("/lecturer/students", { params }),
-  getStudentDetail:   (id)     => api.get(`/lecturer/students/${id}`),
-  getFilterOptions:   ()       => api.get("/lecturer/filter-options"),
+  getDashboard: () => api.get("/lecturer/dashboard"),
+  getStudents: (params) => api.get("/lecturer/students", { params }),
+  getStudentDetail: (id) => api.get(`/lecturer/students/${id}`),
+  getFilterOptions: () => api.get("/lecturer/filter-options"),
+  reviewWeeklyReport: (studentId, reportId, data) => api.put(`/lecturer/students/${studentId}/reports/weekly/${reportId}/review`, data),
+  evaluateStudent: (studentId, data) => api.post(`/lecturer/students/${studentId}/evaluate`, data),
+  getEvaluationStudents: (params) => api.get("/lecturer/evaluations", { params }),
 };
 
 // ─── LECTURER REPORT WORKFLOW API ─────────────────────────────────────────
 export const lecturerReportAPI = {
-  getPeriods:      ()       => api.get("/lecturer/workflow/periods"),
-  getTemplates:    (params) => api.get("/lecturer/workflow/templates", { params }),
-  createTemplate:  (data)   => api.post("/lecturer/workflow/templates", data),
-  updateTemplate:  (id, data) => api.put(`/lecturer/workflow/templates/${id}`, data),
-  deleteTemplate:  (id)     => api.delete(`/lecturer/workflow/templates/${id}`),
-  getSubmissions:  (params) => api.get("/lecturer/workflow/submissions", { params }),
-  reviewSubmission:(id, data) => api.put(`/lecturer/workflow/submissions/${id}/review`, data),
+  getPeriods: () => api.get("/lecturer/workflow/periods"),
+  getTemplates: (params) => api.get("/lecturer/workflow/templates", { params }),
+  createTemplate: (data) => api.post("/lecturer/workflow/templates", data),
+  updateTemplate: (id, data) => api.put(`/lecturer/workflow/templates/${id}`, data),
+  deleteTemplate: (id) => api.delete(`/lecturer/workflow/templates/${id}`),
+  getSubmissions: (params) => api.get("/lecturer/workflow/submissions", { params }),
+  reviewSubmission: (id, data) => api.put(`/lecturer/workflow/submissions/${id}/review`, data),
+};
+
+// ─── LECTURER PROFILE API ──────────────────────────────────────────────────
+export const lecturerProfileAPI = {
+  getProfile: () => api.get("/lecturer/profile"),
+  updateProfile: (data) => api.put("/lecturer/profile", data),
+  changePassword: (data) => api.put("/lecturer/profile/change-password", data),
 };
 
 export default api;
