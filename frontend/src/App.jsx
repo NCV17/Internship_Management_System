@@ -38,6 +38,7 @@ import RegisterInternship from "./pages/RegisterInternship";
 import InternshipInfo from "./pages/InternshipInfo";
 import StudentReports from "./pages/StudentReports";
 import StudentEvaluationResults from "./pages/StudentEvaluationResults";
+import StudentProfile from "./pages/StudentProfile";
 
 function App() {
   return (
@@ -116,6 +117,7 @@ function App() {
               <Route path="internship-info" element={<InternshipInfo />} />
               <Route path="reports" element={<StudentReports />} />
               <Route path="evaluations" element={<StudentEvaluationResults />} />
+              <Route path="profile" element={<StudentProfile />} />
             </Route>
 
             {/* ── 404 FALLBACK ──────────────────────────────────────────── */}

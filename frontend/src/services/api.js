@@ -125,6 +125,12 @@ export const studentInternshipAPI = {
   getEvaluationResult: () => api.get("/student/evaluation-result"),
 };
 
+// ─── STUDENT PROFILE API ───────────────────────────────────────────────────
+export const studentProfileAPI = {
+  updateProfile: (data) => api.put("/student/profile", data),
+  changePassword: (data) => api.put("/student/profile/change-password", data),
+};
+
 // ─── LECTURER DASHBOARD & STUDENTS API ────────────────────────────────────
 export const lecturerDashboardAPI = {
   getDashboard: () => api.get("/lecturer/dashboard"),

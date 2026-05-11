@@ -14,6 +14,7 @@ const studentInternshipRoutes = require("./routes/studentInternship.routes");
 const lecturerDashboardRoutes = require("./routes/lecturerDashboard.routes");
 const lecturerReportRoutes = require("./routes/lecturerReport.routes");
 const lecturerProfileRoutes = require("./routes/lecturerProfile.routes");
+const studentProfileRoutes = require("./routes/studentProfile.routes");
 const errorHandler = require("./middleware/error.middleware");
 
 const app = express();
@@ -54,6 +55,7 @@ app.use("/api/student", studentInternshipRoutes);
 app.use("/api/lecturer", lecturerDashboardRoutes);
 app.use("/api/lecturer/workflow", lecturerReportRoutes);
 app.use("/api/lecturer/profile", lecturerProfileRoutes);
+app.use("/api/student/profile", studentProfileRoutes);
 
 // ─── 404 HANDLER ──────────────────────────────────────────────────────────────
 app.use((req, res) => {

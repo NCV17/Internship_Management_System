@@ -46,8 +46,37 @@ const InfoRow = ({ label, value }) => (
 );
 
 // ─── Hero Banner ──────────────────────────────────────────────────────────────
-const HeroCard = ({ student }) => {
-  const cfg = STATUS_CFG[student?.Status || "NOT_STARTED"];
+const HeroCard = ({ student, registration, assignment, weeklyReports, finalReport, evaluation, templatesData }) => {
+  let internshipStatus = "Chưa đăng ký";
+  let statusColor = "#64748b"; 
+  let statusBg = "#f1f5f9"; 
+  let progressPercent = 0;
+
+  if (registration) {
+    if (assignment) {
+      const approvedWeekly = weeklyReports?.filter(r => r.Status === 'APPROVED').length || 0;
+      const totalApproved = approvedWeekly + (finalReport?.Status === 'APPROVED' ? 1 : 0);
+      const totalTemplates = templatesData?.length > 0 ? templatesData.length : 1; 
+      
+      progressPercent = Math.min(Math.round((totalApproved / totalTemplates) * 100), 100); 
+
+      if (evaluation) {
+        internshipStatus = "Đã hoàn thành";
+        statusColor = "#166534"; 
+        statusBg = "#dcfce7"; 
+      } else {
+        internshipStatus = "Đang thực tập";
+        statusColor = "#1e40af"; 
+        statusBg = "#dbeafe"; 
+      }
+    } else {
+      internshipStatus = "Chờ phân công GV";
+      statusColor = "#92400e"; 
+      statusBg = "#fef3c7"; 
+      progressPercent = 0;
+    }
+  }
+
   return (
     <div style={{ background: "linear-gradient(135deg, #1e40af 0%, #2563eb 60%, #3b82f6 100%)", borderRadius: "var(--radius-lg)", padding: "28px 32px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 24, boxShadow: "0 6px 24px rgba(37,99,235,0.2)" }}>
       {/* Avatar + Name */}
@@ -58,7 +87,7 @@ const HeroCard = ({ student }) => {
         <div>
           <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 6 }}>
             <h1 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "white" }}>{student?.FullName || "Sinh viên"}</h1>
-            <span style={{ background: cfg.bg, color: cfg.color, fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20 }}>{cfg.label}</span>
+            <span style={{ background: statusBg, color: statusColor, fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20 }}>{internshipStatus}</span>
           </div>
           <div style={{ fontSize: 13, color: "rgba(255,255,255,0.75)" }}>
             MSSV: <strong style={{ color: "white" }}>{student?.StudentCode}</strong>
@@ -70,12 +99,12 @@ const HeroCard = ({ student }) => {
       <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 12, padding: "14px 20px", minWidth: 180, flexShrink: 0 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
           <span style={{ fontSize: 12, color: "rgba(255,255,255,0.7)" }}>Tiến độ</span>
-          <span style={{ fontSize: 28, fontWeight: 800, color: "white", lineHeight: 1 }}>{cfg.pct}%</span>
+          <span style={{ fontSize: 28, fontWeight: 800, color: "white", lineHeight: 1 }}>{progressPercent}%</span>
         </div>
         <div style={{ height: 6, background: "rgba(255,255,255,0.2)", borderRadius: 4, overflow: "hidden", marginBottom: 6 }}>
-          <div style={{ height: "100%", width: `${cfg.pct}%`, background: "white", borderRadius: 4 }} />
+          <div style={{ height: "100%", width: `${progressPercent}%`, background: "white", borderRadius: 4 }} />
         </div>
-        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)" }}>{cfg.label}</div>
+        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)" }}>{internshipStatus}</div>
       </div>
     </div>
   );
@@ -312,18 +341,25 @@ const InternshipInfo = () => {
   const [weeklyReports, setWeekly] = useState([]);
   const [finalReport, setFinal] = useState(null);
   const [evaluation, setEval] = useState(null);
+  const [templatesData, setTemplatesData] = useState([]);
 
   useEffect(() => {
     (async () => {
       try {
-        const res = await studentInternshipAPI.getMyInternshipInfo();
-        const d = res.data.data;
+        const [infoRes, reportsRes] = await Promise.all([
+          studentInternshipAPI.getMyInternshipInfo(),
+          studentInternshipAPI.getReports().catch(() => ({ data: { data: [] } }))
+        ]);
+        const d = infoRes.data.data;
         setStudent(d.student);
         setReg(d.registration);
         setAssign(d.assignment);
         setWeekly(d.weeklyReports || []);
         setFinal(d.finalReport);
         setEval(d.evaluation);
+        if (reportsRes.data?.success) {
+          setTemplatesData(reportsRes.data.data);
+        }
       } catch {
         toast.error("Không thể tải thông tin thực tập.");
       } finally {
@@ -365,7 +401,15 @@ const InternshipInfo = () => {
             </SectionCard>
           ) : (
             <>
-              <HeroCard student={student} />
+              <HeroCard 
+                student={student} 
+                registration={registration} 
+                assignment={assignment} 
+                weeklyReports={weeklyReports} 
+                finalReport={finalReport} 
+                evaluation={evaluation} 
+                templatesData={templatesData} 
+              />
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
                 <CompanyCard reg={registration} />
