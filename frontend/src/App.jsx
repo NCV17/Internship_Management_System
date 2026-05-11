@@ -29,12 +29,15 @@ import LecturerDashboard from "./pages/LecturerDashboard";
 import LecturerStudents from "./pages/LecturerStudents";
 import LecturerStudentDetail from "./pages/LecturerStudentDetail";
 import LecturerReports from "./pages/LecturerReports";
+import LecturerEvaluations from "./pages/LecturerEvaluations";
+import LecturerProfile from "./pages/LecturerProfile";
 
 // Pages - Student
 import StudentDashboard from "./pages/StudentDashboard";
 import RegisterInternship from "./pages/RegisterInternship";
 import InternshipInfo from "./pages/InternshipInfo";
 import StudentReports from "./pages/StudentReports";
+import StudentEvaluationResults from "./pages/StudentEvaluationResults";
 
 function App() {
   return (
@@ -95,7 +98,8 @@ function App() {
               <Route path="students" element={<LecturerStudents />} />
               <Route path="students/:id" element={<LecturerStudentDetail />} />
               <Route path="reports" element={<LecturerReports />} />
-              {/* Add more lecturer pages here as nested routes */}
+              <Route path="evaluations" element={<LecturerEvaluations />} />
+              <Route path="profile" element={<LecturerProfile />} />
             </Route>
 
             {/* ── STUDENT ROUTES ────────────────────────────────────────── */}
@@ -111,6 +115,7 @@ function App() {
               <Route path="register-internship" element={<RegisterInternship />} />
               <Route path="internship-info" element={<InternshipInfo />} />
               <Route path="reports" element={<StudentReports />} />
+              <Route path="evaluations" element={<StudentEvaluationResults />} />
             </Route>
 
             {/* ── 404 FALLBACK ──────────────────────────────────────────── */}

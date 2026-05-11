@@ -189,20 +189,20 @@ const getLecturerStudents = async (req, res, next) => {
     const { search, studentCode, status, periodId, companyId } = req.query;
 
     let whereConditions = ["a.LecturerId = @LecturerId"];
-    if (search)      whereConditions.push(`(s.FullName LIKE @Search OR s.StudentCode LIKE @Search)`);
+    if (search) whereConditions.push(`(s.FullName LIKE @Search OR s.StudentCode LIKE @Search)`);
     if (studentCode) whereConditions.push(`s.StudentCode LIKE @StudentCode`);
-    if (status)      whereConditions.push(`s.Status = @Status`);
-    if (periodId)    whereConditions.push(`a.PeriodId = @PeriodId`);
-    if (companyId)   whereConditions.push(`ir.CompanyId = @CompanyId`);
+    if (status) whereConditions.push(`s.Status = @Status`);
+    if (periodId) whereConditions.push(`a.PeriodId = @PeriodId`);
+    if (companyId) whereConditions.push(`ir.CompanyId = @CompanyId`);
 
     const whereClause = "WHERE " + whereConditions.join(" AND ");
 
     const request = pool.request().input("LecturerId", sql.Int, lecturerId);
-    if (search)      request.input("Search",      sql.NVarChar, `%${search}%`);
+    if (search) request.input("Search", sql.NVarChar, `%${search}%`);
     if (studentCode) request.input("StudentCode", sql.NVarChar, `%${studentCode}%`);
-    if (status)      request.input("Status",      sql.NVarChar, status);
-    if (periodId)    request.input("PeriodId",    sql.Int,      parseInt(periodId));
-    if (companyId)   request.input("CompanyId",   sql.Int,      parseInt(companyId));
+    if (status) request.input("Status", sql.NVarChar, status);
+    if (periodId) request.input("PeriodId", sql.Int, parseInt(periodId));
+    if (companyId) request.input("CompanyId", sql.Int, parseInt(companyId));
 
     const studentsRes = await request.query(`
       SELECT
@@ -288,7 +288,7 @@ const getLecturerStudentDetail = async (req, res, next) => {
     const assignCheck = await pool
       .request()
       .input("LecturerId", sql.Int, lecturerId)
-      .input("StudentId",  sql.Int, studentId)
+      .input("StudentId", sql.Int, studentId)
       .query(`
         SELECT a.AssignmentId, a.PeriodId
         FROM Assignments a
@@ -314,7 +314,7 @@ const getLecturerStudentDetail = async (req, res, next) => {
     const regRes = await pool
       .request()
       .input("StudentId", sql.Int, studentId)
-      .input("PeriodId",  sql.Int, PeriodId)
+      .input("PeriodId", sql.Int, PeriodId)
       .query(`
         SELECT ir.RegistrationId, ir.RegisteredAt, ir.Status AS regStatus,
                c.CompanyId, c.CompanyName, c.Address, c.Field, c.ContactPerson, c.ContactEmail
@@ -336,7 +336,7 @@ const getLecturerStudentDetail = async (req, res, next) => {
     const progressRes = await pool
       .request()
       .input("StudentId", sql.Int, studentId)
-      .input("PeriodId",  sql.Int, PeriodId)
+      .input("PeriodId", sql.Int, PeriodId)
       .query(`
         SELECT ProgressPercent, CurrentStage, InternshipStatus, Notes, UpdatedAt
         FROM InternshipProgress
@@ -347,7 +347,7 @@ const getLecturerStudentDetail = async (req, res, next) => {
     const weeklyRes = await pool
       .request()
       .input("StudentId", sql.Int, studentId)
-      .input("PeriodId",  sql.Int, PeriodId)
+      .input("PeriodId", sql.Int, PeriodId)
       .query(`
         SELECT wr.ReportId, wr.Title, wr.Status, wr.SubmittedAt, wr.LecturerComment,
                rt.WeekNumber, rt.DueDate
@@ -361,7 +361,7 @@ const getLecturerStudentDetail = async (req, res, next) => {
     const finalRes = await pool
       .request()
       .input("StudentId", sql.Int, studentId)
-      .input("PeriodId",  sql.Int, PeriodId)
+      .input("PeriodId", sql.Int, PeriodId)
       .query(`
         SELECT FinalReportId, Title, Status, SubmittedAt, LecturerComment
         FROM FinalReports
@@ -371,7 +371,7 @@ const getLecturerStudentDetail = async (req, res, next) => {
     // Evaluation
     const evalRes = await pool
       .request()
-      .input("StudentId",  sql.Int, studentId)
+      .input("StudentId", sql.Int, studentId)
       .input("LecturerId", sql.Int, lecturerId)
       .query(`
         SELECT EvaluationId, ProcessScore, WeeklyReportScore, FinalReportScore,
@@ -383,13 +383,13 @@ const getLecturerStudentDetail = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       data: {
-        student:     studentRes.recordset[0] || null,
+        student: studentRes.recordset[0] || null,
         registration: regRes.recordset[0] || null,
-        period:      periodRes.recordset[0] || null,
-        progress:    progressRes.recordset[0] || null,
+        period: periodRes.recordset[0] || null,
+        progress: progressRes.recordset[0] || null,
         weeklyReports: weeklyRes.recordset,
-        finalReport:   finalRes.recordset[0] || null,
-        evaluation:    evalRes.recordset[0] || null,
+        finalReport: finalRes.recordset[0] || null,
+        evaluation: evalRes.recordset[0] || null,
       },
     });
   } catch (err) {
@@ -445,9 +445,190 @@ const getLecturerFilterOptions = async (req, res, next) => {
   }
 };
 
+// ─── PUT /api/lecturer/students/:studentId/reports/weekly/:reportId/review ───
+const reviewWeeklyReport = async (req, res, next) => {
+  try {
+    const pool = await getPool();
+    const userId = req.user.userId;
+    const { studentId, reportId } = req.params;
+    const { status, score, lecturerComment } = req.body;
+
+    const lecturerId = await getLecturerIdByUserId(pool, userId);
+    if (!lecturerId) return res.status(404).json({ success: false, message: "Lecturer not found." });
+
+    // Verify assignment
+    const check = await pool.request()
+      .input("LecturerId", sql.Int, lecturerId)
+      .input("StudentId", sql.Int, parseInt(studentId))
+      .query(`SELECT 1 FROM Assignments a WHERE a.LecturerId = @LecturerId AND a.StudentId = @StudentId`);
+    if (check.recordset.length === 0)
+      return res.status(403).json({ success: false, message: "Access denied." });
+
+    const req2 = pool.request()
+      .input("ReportId", sql.Int, parseInt(reportId))
+      .input("StudentId", sql.Int, parseInt(studentId))
+      .input("Status", sql.NVarChar, status)
+      .input("LecturerComment", sql.NVarChar, lecturerComment || null);
+
+    // Try with Score column first
+    try {
+      req2.input("Score", sql.Float, score != null ? parseFloat(score) : null);
+      await req2.query(`
+        UPDATE WeeklyReports
+        SET Status = @Status, LecturerComment = @LecturerComment,
+            Score = @Score, ReviewedAt = GETDATE()
+        WHERE ReportId = @ReportId AND StudentId = @StudentId
+      `);
+    } catch {
+      await pool.request()
+        .input("ReportId", sql.Int, parseInt(reportId))
+        .input("StudentId", sql.Int, parseInt(studentId))
+        .input("Status", sql.NVarChar, status)
+        .input("LecturerComment", sql.NVarChar, lecturerComment || null)
+        .query(`
+          UPDATE WeeklyReports
+          SET Status = @Status, LecturerComment = @LecturerComment
+          WHERE ReportId = @ReportId AND StudentId = @StudentId
+        `);
+    }
+
+    return res.status(200).json({ success: true, message: "Report reviewed." });
+  } catch (err) { next(err); }
+};
+
+// ─── POST /api/lecturer/students/:studentId/evaluate ─────────────────────────
+const evaluateStudent = async (req, res, next) => {
+  try {
+    const pool = await getPool();
+    const userId = req.user.userId;
+    const { studentId } = req.params;
+    const { periodId, processScore, weeklyReportScore, finalReportScore, attitudeScore, totalScore, comment } = req.body;
+
+    const lecturerId = await getLecturerIdByUserId(pool, userId);
+    if (!lecturerId) return res.status(404).json({ success: false, message: "Lecturer not found." });
+
+    const existing = await pool.request()
+      .input("StudentId", sql.Int, parseInt(studentId))
+      .input("LecturerId", sql.Int, lecturerId)
+      .query(`SELECT EvaluationId FROM Evaluations WHERE StudentId = @StudentId AND LecturerId = @LecturerId`);
+
+    if (existing.recordset.length > 0) {
+      await pool.request()
+        .input("EvaluationId", sql.Int, existing.recordset[0].EvaluationId)
+        .input("ProcessScore", sql.Float, parseFloat(processScore) || 0)
+        .input("WeeklyReportScore", sql.Float, parseFloat(weeklyReportScore) || 0)
+        .input("FinalReportScore", sql.Float, parseFloat(finalReportScore) || 0)
+        .input("AttitudeScore", sql.Float, parseFloat(attitudeScore) || 0)
+        .input("TotalScore", sql.Float, parseFloat(totalScore) || 0)
+        .input("Comment", sql.NVarChar, comment || null)
+        .query(`
+          UPDATE Evaluations
+          SET ProcessScore=@ProcessScore, WeeklyReportScore=@WeeklyReportScore,
+              FinalReportScore=@FinalReportScore, AttitudeScore=@AttitudeScore,
+              TotalScore=@TotalScore, Comment=@Comment, EvaluatedAt=GETDATE()
+          WHERE EvaluationId=@EvaluationId
+        `);
+    } else {
+      await pool.request()
+        .input("StudentId", sql.Int, parseInt(studentId))
+        .input("LecturerId", sql.Int, lecturerId)
+        .input("PeriodId", sql.Int, parseInt(periodId))
+        .input("ProcessScore", sql.Float, parseFloat(processScore) || 0)
+        .input("WeeklyReportScore", sql.Float, parseFloat(weeklyReportScore) || 0)
+        .input("FinalReportScore", sql.Float, parseFloat(finalReportScore) || 0)
+        .input("AttitudeScore", sql.Float, parseFloat(attitudeScore) || 0)
+        .input("TotalScore", sql.Float, parseFloat(totalScore) || 0)
+        .input("Comment", sql.NVarChar, comment || null)
+        .query(`
+          INSERT INTO Evaluations (StudentId, LecturerId, PeriodId, ProcessScore, WeeklyReportScore,
+            FinalReportScore, AttitudeScore, TotalScore, Comment, EvaluatedAt)
+          VALUES (@StudentId, @LecturerId, @PeriodId, @ProcessScore, @WeeklyReportScore,
+            @FinalReportScore, @AttitudeScore, @TotalScore, @Comment, GETDATE())
+        `);
+    }
+
+    return res.status(200).json({ success: true, message: "Evaluation saved." });
+  } catch (err) { next(err); }
+};
+
+// ─── GET /api/lecturer/evaluations?periodId=X ────────────────────────────────
+const getEvaluationStudents = async (req, res, next) => {
+  try {
+    const pool = await getPool();
+    const userId = req.user.userId;
+    const { periodId } = req.query;
+
+    const lecturerId = await getLecturerIdByUserId(pool, userId);
+    if (!lecturerId) return res.status(404).json({ success: false, message: "Lecturer not found." });
+
+    let whereExtra = "";
+    const request = pool.request().input("LecturerId", sql.Int, lecturerId);
+    if (periodId) {
+      whereExtra = "AND a.PeriodId = @PeriodId";
+      request.input("PeriodId", sql.Int, parseInt(periodId));
+    }
+
+    const result = await request.query(`
+      SELECT
+        s.StudentId, s.StudentCode, s.FullName, s.ClassName, s.Email,
+        a.PeriodId, ip.PeriodName,
+        c.CompanyName,
+        (SELECT COUNT(*) FROM WeeklyReports wr WHERE wr.StudentId = s.StudentId AND wr.PeriodId = a.PeriodId) +
+        (SELECT COUNT(*) FROM FinalReports fr WHERE fr.StudentId = s.StudentId AND fr.PeriodId = a.PeriodId) AS submittedReports,
+        e.EvaluationId, e.ProcessScore, e.WeeklyReportScore, e.FinalReportScore,
+        e.AttitudeScore, e.TotalScore, e.Comment, e.EvaluatedAt
+      FROM Assignments a
+      INNER JOIN Students s ON a.StudentId = s.StudentId
+      INNER JOIN InternshipPeriods ip ON a.PeriodId = ip.PeriodId
+      LEFT JOIN InternshipRegistrations ir ON ir.StudentId = s.StudentId AND ir.PeriodId = a.PeriodId
+      LEFT JOIN Companies c ON ir.CompanyId = c.CompanyId
+      LEFT JOIN Evaluations e ON e.StudentId = s.StudentId AND e.PeriodId = a.PeriodId AND e.LecturerId = @LecturerId
+      WHERE a.LecturerId = @LecturerId ${whereExtra}
+      ORDER BY e.EvaluationId ASC, s.FullName ASC
+    `);
+
+    return res.status(200).json({ success: true, data: result.recordset });
+  } catch (err) { next(err); }
+};
+
+// ─── GET /api/student/evaluation-result ──────────────────────────────────────
+const getStudentEvaluationResult = async (req, res, next) => {
+  try {
+    const pool = await getPool();
+    const userId = req.user.userId;
+
+    const studentRes = await pool.request()
+      .input("UserId", sql.Int, userId)
+      .query(`SELECT StudentId FROM Students WHERE UserId = @UserId`);
+    if (studentRes.recordset.length === 0)
+      return res.status(404).json({ success: false, message: "Student not found." });
+    const studentId = studentRes.recordset[0].StudentId;
+
+    const result = await pool.request()
+      .input("StudentId", sql.Int, studentId)
+      .query(`
+        SELECT e.EvaluationId, e.ProcessScore, e.WeeklyReportScore, e.FinalReportScore,
+               e.AttitudeScore, e.TotalScore, e.Comment, e.EvaluatedAt,
+               l.FullName AS LecturerName, l.Department,
+               ip.PeriodName, ip.Semester, ip.AcademicYear
+        FROM Evaluations e
+        INNER JOIN Lecturers l ON e.LecturerId = l.LecturerId
+        INNER JOIN InternshipPeriods ip ON e.PeriodId = ip.PeriodId
+        WHERE e.StudentId = @StudentId
+        ORDER BY e.EvaluatedAt DESC
+      `);
+
+    return res.status(200).json({ success: true, data: result.recordset });
+  } catch (err) { next(err); }
+};
+
 module.exports = {
   getLecturerDashboard,
   getLecturerStudents,
   getLecturerStudentDetail,
   getLecturerFilterOptions,
+  reviewWeeklyReport,
+  evaluateStudent,
+  getEvaluationStudents,
+  getStudentEvaluationResult,
 };

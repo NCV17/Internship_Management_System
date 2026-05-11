@@ -328,32 +328,33 @@ ADD FileName NVARCHAR(255),
 -- =====================================================
 
 CREATE TABLE Evaluations (
-EvaluationId INT PRIMARY KEY IDENTITY(1,1),
+    EvaluationId INT PRIMARY KEY IDENTITY(1,1),
 
+    StudentId INT NOT NULL,
+    LecturerId INT NOT NULL,
+    PeriodId INT NOT NULL,
 
-StudentId INT UNIQUE NOT NULL,
-LecturerId INT NOT NULL,
-PeriodId INT NOT NULL,
+    ProcessScore FLOAT CHECK (ProcessScore BETWEEN 0 AND 10),
+    WeeklyReportScore FLOAT CHECK (WeeklyReportScore BETWEEN 0 AND 10),
+    FinalReportScore FLOAT CHECK (FinalReportScore BETWEEN 0 AND 10),
+    AttitudeScore FLOAT CHECK (AttitudeScore BETWEEN 0 AND 10),
+    TotalScore FLOAT CHECK (TotalScore BETWEEN 0 AND 10),
 
-ProcessScore FLOAT CHECK (ProcessScore BETWEEN 0 AND 10),
-WeeklyReportScore FLOAT CHECK (WeeklyReportScore BETWEEN 0 AND 10),
-FinalReportScore FLOAT CHECK (FinalReportScore BETWEEN 0 AND 10),
-AttitudeScore FLOAT CHECK (AttitudeScore BETWEEN 0 AND 10),
-TotalScore FLOAT CHECK (TotalScore BETWEEN 0 AND 10),
+    Comment NVARCHAR(MAX),
 
-Comment NVARCHAR(MAX),
+    EvaluatedAt DATETIME DEFAULT GETDATE(),
 
-EvaluatedAt DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (StudentId)
+        REFERENCES Students(StudentId),
 
-FOREIGN KEY (StudentId)
-REFERENCES Students(StudentId),
+    FOREIGN KEY (LecturerId)
+        REFERENCES Lecturers(LecturerId),
 
-FOREIGN KEY (LecturerId)
-REFERENCES Lecturers(LecturerId),
+    FOREIGN KEY (PeriodId)
+        REFERENCES InternshipPeriods(PeriodId),
 
-FOREIGN KEY (PeriodId)
-REFERENCES InternshipPeriods(PeriodId)
-
+    CONSTRAINT UQ_Evaluations_Student_Period
+        UNIQUE(StudentId, PeriodId)
 );
 
 -- =====================================================
