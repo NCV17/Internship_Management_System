@@ -49,6 +49,7 @@ export const lecturerAPI = {
   update: (id, data) => api.put(`/lecturers/${id}`, data),
   delete: (id) => api.delete(`/lecturers/${id}`),
   exportExcel: (params) => api.get("/lecturers/export", { params, responseType: "blob" }),
+  getAssignedStudents: (id, params) => api.get(`/lecturers/${id}/students`, { params }),
 };
 
 // ─── STUDENT API ───────────────────────────────────────────────────────────

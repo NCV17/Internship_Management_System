@@ -11,13 +11,14 @@ const getAllLecturers = async (req, res, next) => {
     const limit    = Math.min(100, parseInt(req.query.limit) || 10);
     const offset   = (page - 1) * limit;
     const search   = (req.query.search || "").trim();
+    const periodId = req.query.periodId ? parseInt(req.query.periodId) : null;
 
     // Build WHERE clause
     const whereClause = search
-      ? `WHERE l.LecturerCode LIKE @Search
+      ? `WHERE (l.LecturerCode LIKE @Search
           OR l.FullName       LIKE @Search
           OR l.Department     LIKE @Search
-          OR l.Email          LIKE @Search`
+          OR l.Email          LIKE @Search)`
       : "";
 
     const searchParam = `%${search}%`;
@@ -36,12 +37,16 @@ const getAllLecturers = async (req, res, next) => {
     const total = countResult.recordset[0].total;
 
     // Paginated data
-    const dataResult = await pool
-      .request()
+    const request = pool.request()
       .input("Search", sql.NVarChar, searchParam)
       .input("Offset", sql.Int, offset)
-      .input("Limit",  sql.Int, limit)
-      .query(`
+      .input("Limit",  sql.Int, limit);
+      
+    if (periodId) {
+      request.input("PeriodId", sql.Int, periodId);
+    }
+
+    const dataResult = await request.query(`
         SELECT
           l.LecturerId,
           l.LecturerCode,
@@ -52,7 +57,28 @@ const getAllLecturers = async (req, res, next) => {
           l.CreatedAt,
           u.UserId,
           u.Username,
-          u.IsActive
+          u.IsActive,
+          (
+            SELECT COUNT(*) 
+            FROM Assignments a 
+            WHERE a.LecturerId = l.LecturerId 
+            ${periodId ? `AND a.PeriodId = @PeriodId` : ""}
+          ) as AssignedStudents,
+          (
+            SELECT COUNT(*)
+            FROM WeeklyReports wr
+            INNER JOIN Assignments a ON wr.StudentId = a.StudentId AND wr.PeriodId = a.PeriodId
+            WHERE a.LecturerId = l.LecturerId 
+            AND wr.Status = 'PENDING'
+            ${periodId ? `AND a.PeriodId = @PeriodId` : ""}
+          ) + (
+            SELECT COUNT(*)
+            FROM FinalReports fr
+            INNER JOIN Assignments a ON fr.StudentId = a.StudentId AND fr.PeriodId = a.PeriodId
+            WHERE a.LecturerId = l.LecturerId 
+            AND fr.Status = 'PENDING'
+            ${periodId ? `AND a.PeriodId = @PeriodId` : ""}
+          ) as PendingReports
         FROM Lecturers l
         INNER JOIN Users u ON l.UserId = u.UserId
         ${whereClause}
@@ -416,6 +442,42 @@ const exportLecturersExcel = async (req, res, next) => {
   }
 };
 
+// ─── GET ASSIGNED STUDENTS FOR LECTURER ───────────────────────────────────────
+const getLecturerAssignedStudents = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const periodId = req.query.periodId ? parseInt(req.query.periodId) : null;
+    const pool = await getPool();
+
+    const request = pool.request().input("LecturerId", sql.Int, parseInt(id));
+    if (periodId) {
+      request.input("PeriodId", sql.Int, periodId);
+    }
+
+    const result = await request.query(`
+      SELECT 
+        s.StudentId,
+        s.StudentCode,
+        s.FullName,
+        s.ClassName,
+        ip.PeriodName
+      FROM Assignments a
+      INNER JOIN Students s ON a.StudentId = s.StudentId
+      INNER JOIN InternshipPeriods ip ON a.PeriodId = ip.PeriodId
+      WHERE a.LecturerId = @LecturerId
+      ${periodId ? `AND a.PeriodId = @PeriodId` : ""}
+      ORDER BY s.StudentCode ASC
+    `);
+
+    return res.status(200).json({
+      success: true,
+      data: result.recordset,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getAllLecturers,
   getLecturerById,
@@ -423,4 +485,5 @@ module.exports = {
   updateLecturer,
   deleteLecturer,
   exportLecturersExcel,
+  getLecturerAssignedStudents,
 };

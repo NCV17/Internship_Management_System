@@ -4,6 +4,8 @@ import { useToast } from "../context/ToastContext";
 import LecturerModal from "../components/lecturer/LecturerModal";
 import DeleteConfirmModal from "../components/lecturer/DeleteConfirmModal";
 import LecturerDetailModal from "../components/lecturer/LecturerDetailModal";
+import AssignedStudentsModal from "../components/lecturer/AssignedStudentsModal";
+import { periodAPI } from "../services/api";
 
 const LecturerManagement = () => {
   const toast = useToast();
@@ -18,13 +20,31 @@ const LecturerManagement = () => {
   const [showEditModal, setShowEditModal]     = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showStudentsModal, setShowStudentsModal] = useState(false);
   const [selectedLecturer, setSelectedLecturer] = useState(null);
 
+  const [periods, setPeriods] = useState([]);
+  const [selectedPeriod, setSelectedPeriod] = useState("");
+
+  useEffect(() => {
+    const fetchPeriods = async () => {
+      try {
+        const res = await periodAPI.getAll({ limit: 100 });
+        setPeriods(res.data.data.periods || []);
+      } catch (err) {
+        console.error("Failed to fetch periods");
+      }
+    };
+    fetchPeriods();
+  }, []);
+
   // ── Fetch lecturers ──────────────────────────────────────────────────────
-  const fetchLecturers = useCallback(async (page = 1, searchTerm = search) => {
+  const fetchLecturers = useCallback(async (page = 1, searchTerm = search, periodId = selectedPeriod) => {
     try {
       setLoading(true);
-      const res = await lecturerAPI.getAll({ page, limit: pagination.limit, search: searchTerm });
+      const params = { page, limit: pagination.limit, search: searchTerm };
+      if (periodId) params.periodId = periodId;
+      const res = await lecturerAPI.getAll(params);
       setLecturers(res.data.data.lecturers);
       setPagination(res.data.data.pagination);
     } catch (err) {
@@ -32,9 +52,9 @@ const LecturerManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, [pagination.limit, search]);
+  }, [pagination.limit, search, selectedPeriod]);
 
-  useEffect(() => { fetchLecturers(1, ""); }, []);
+  useEffect(() => { fetchLecturers(1, search, selectedPeriod); }, [selectedPeriod]);
 
   // ── Search (debounced via button / Enter) ────────────────────────────────
   const handleSearch = () => {
@@ -47,7 +67,7 @@ const LecturerManagement = () => {
   const handleClearSearch = () => {
     setSearchInput("");
     setSearch("");
-    fetchLecturers(1, "");
+    fetchLecturers(1, "", selectedPeriod);
   };
 
   // ── Pagination ───────────────────────────────────────────────────────────
@@ -62,7 +82,7 @@ const LecturerManagement = () => {
       await lecturerAPI.delete(selectedLecturer.LecturerId);
       toast.success(`Lecturer "${selectedLecturer.FullName}" deleted.`);
       setShowDeleteModal(false);
-      fetchLecturers(pagination.page, search);
+      fetchLecturers(pagination.page, search, selectedPeriod);
     } catch (err) {
       toast.error(err.response?.data?.message || "Delete failed.");
     }
@@ -88,6 +108,15 @@ const LecturerManagement = () => {
   const openEdit   = (l) => { setSelectedLecturer(l); setShowEditModal(true); };
   const openDelete = (l) => { setSelectedLecturer(l); setShowDeleteModal(true); };
   const openDetail = (l) => { setSelectedLecturer(l); setShowDetailModal(true); };
+  const openStudents = (l) => { setSelectedLecturer(l); setShowStudentsModal(true); };
+
+  // ── Workload Badge Logic ──────────────────────────────────────────────────
+  const getWorkloadBadge = (count) => {
+    if (!count || count === 0) return <span style={{ padding: "4px 8px", background: "#f1f5f9", color: "#64748b", borderRadius: "12px", fontSize: "12px", fontWeight: 600 }}>0 SV</span>;
+    if (count <= 5) return <span style={{ padding: "4px 8px", background: "#dcfce7", color: "#166534", borderRadius: "12px", fontSize: "12px", fontWeight: 600 }}>{count} SV</span>;
+    if (count <= 10) return <span style={{ padding: "4px 8px", background: "#fef9c3", color: "#854d0e", borderRadius: "12px", fontSize: "12px", fontWeight: 600 }}>{count} SV</span>;
+    return <span style={{ padding: "4px 8px", background: "#fee2e2", color: "#991b1b", borderRadius: "12px", fontSize: "12px", fontWeight: 600 }}>{count} SV (Quá tải)</span>;
+  };
 
   // ── Pagination helper ─────────────────────────────────────────────────────
   const buildPageNumbers = () => {
@@ -129,6 +158,17 @@ const LecturerManagement = () => {
                 <button className="lm-clear-btn" onClick={handleClearSearch}>✕</button>
               )}
             </div>
+            <select
+              className="lm-search-input"
+              style={{ width: "200px", background: "white", paddingLeft: "12px" }}
+              value={selectedPeriod}
+              onChange={(e) => setSelectedPeriod(e.target.value)}
+            >
+              <option value="">-- Tất cả đợt --</option>
+              {periods.map(p => (
+                <option key={p.PeriodId} value={p.PeriodId}>{p.PeriodName}</option>
+              ))}
+            </select>
             <button className="lm-search-btn" onClick={handleSearch}>Tìm kiếm</button>
           </div>
           <div style={{ display: "flex", gap: "8px" }}>
@@ -177,6 +217,8 @@ const LecturerManagement = () => {
                     <th>Khoa / Bộ môn</th>
                     <th>Email</th>
                     <th>Điện thoại</th>
+                    <th>SV hướng dẫn</th>
+                    <th>Báo cáo chờ duyệt</th>
                     <th>Trạng thái</th>
                     <th>Thao tác</th>
                   </tr>
@@ -199,6 +241,16 @@ const LecturerManagement = () => {
                       <td>{l.Department || <span className="lm-na">—</span>}</td>
                       <td>{l.Email || <span className="lm-na">—</span>}</td>
                       <td>{l.Phone || <span className="lm-na">—</span>}</td>
+                      <td>{getWorkloadBadge(l.AssignedStudents)}</td>
+                      <td>
+                        {l.PendingReports > 0 ? (
+                          <span style={{ padding: "4px 8px", background: "#fef3c7", color: "#b45309", borderRadius: "12px", fontSize: "12px", fontWeight: 600 }}>
+                            {l.PendingReports} báo cáo
+                          </span>
+                        ) : (
+                          <span style={{ color: "#94a3b8", fontSize: "13px" }}>0</span>
+                        )}
+                      </td>
                       <td>
                         <span className={`lm-status ${l.IsActive ? "active" : "inactive"}`}>
                           {l.IsActive ? "● Hoạt động" : "● Vô hiệu"}
@@ -206,6 +258,7 @@ const LecturerManagement = () => {
                       </td>
                       <td>
                         <div className="lm-action-group">
+                          <button className="lm-btn-detail" onClick={() => openStudents(l)} title="Xem sinh viên hướng dẫn"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg></button>
                           <button className="lm-btn-detail" onClick={() => openDetail(l)} title="Chi tiết"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg></button>
                           <button className="lm-btn-edit"   onClick={() => openEdit(l)}   title="Chỉnh sửa"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button>
                           <button className="lm-btn-delete" onClick={() => openDelete(l)} title="Xóa"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
@@ -277,6 +330,13 @@ const LecturerManagement = () => {
           lecturer={selectedLecturer}
           onClose={() => setShowDetailModal(false)}
           onEdit={() => { setShowDetailModal(false); openEdit(selectedLecturer); }}
+        />
+      )}
+      {showStudentsModal && selectedLecturer && (
+        <AssignedStudentsModal
+          lecturer={selectedLecturer}
+          periodId={selectedPeriod}
+          onClose={() => setShowStudentsModal(false)}
         />
       )}
     </>

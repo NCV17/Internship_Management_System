@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { reportAPI, periodAPI, lecturerAPI } from "../services/api";
 import { useToast } from "../context/ToastContext";
 import ReportReviewModal from "../components/report/ReportReviewModal";
+import { FileText, Clock, CheckCircle2, AlertCircle } from "lucide-react";
 
 const DEFAULT_FILTERS = { periodId: "", lecturerId: "", status: "", type: "", studentId: "" };
 
@@ -94,6 +95,13 @@ const ReportManagement = () => {
     }
   };
 
+  const statTotals = {
+    total: reports.length,
+    pending: reports.filter(r => r.Status === "PENDING").length,
+    approved: reports.filter(r => r.Status === "APPROVED").length,
+    revision: reports.filter(r => r.Status === "REVISION_REQUIRED").length,
+  };
+
   return (
     <>
       <div className="topbar">
@@ -167,6 +175,37 @@ const ReportManagement = () => {
           </div>
         </div>
 
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 transition-transform hover:-translate-y-1">
+            <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0"><FileText size={24} /></div>
+            <div>
+              <div className="text-2xl font-black text-slate-800 leading-none mb-1">{statTotals.total}</div>
+              <div className="text-xs font-semibold text-slate-500">Tổng báo cáo</div>
+            </div>
+          </div>
+          <div className="bg-white p-5 rounded-2xl border border-amber-100 shadow-sm flex items-center gap-4 transition-transform hover:-translate-y-1">
+            <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0"><Clock size={24} /></div>
+            <div>
+              <div className="text-2xl font-black text-amber-700 leading-none mb-1">{statTotals.pending}</div>
+              <div className="text-xs font-semibold text-slate-500">Chờ duyệt</div>
+            </div>
+          </div>
+          <div className="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm flex items-center gap-4 transition-transform hover:-translate-y-1">
+            <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0"><CheckCircle2 size={24} /></div>
+            <div>
+              <div className="text-2xl font-black text-emerald-700 leading-none mb-1">{statTotals.approved}</div>
+              <div className="text-xs font-semibold text-slate-500">Đã duyệt</div>
+            </div>
+          </div>
+          <div className="bg-white p-5 rounded-2xl border border-rose-100 shadow-sm flex items-center gap-4 transition-transform hover:-translate-y-1">
+            <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center flex-shrink-0"><AlertCircle size={24} /></div>
+            <div>
+              <div className="text-2xl font-black text-rose-700 leading-none mb-1">{statTotals.revision}</div>
+              <div className="text-xs font-semibold text-slate-500">Cần chỉnh sửa</div>
+            </div>
+          </div>
+        </div>
+
         <div className="lm-table-card">
           {loading ? (
             <div className="lm-empty-state">
@@ -197,37 +236,41 @@ const ReportManagement = () => {
                     return (
                       <tr key={idx} className="lm-table-row">
                         <td>
-                          <div style={{ fontWeight: 600, color: "var(--text-primary)" }}>{r.StudentName}</div>
+                          <div style={{ fontWeight: 600, color: "var(--text-primary)", cursor: "pointer" }} className="hover:text-blue-600 hover:underline">{r.StudentName}</div>
                           <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>{r.StudentCode}</div>
                         </td>
                         <td>
-                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${r.Type === 'FINAL' ? 'bg-indigo-50 text-indigo-700' : 'bg-blue-50 text-blue-700'}`}>
+                          <span className={`inline-flex items-center px-2.5 py-1 text-[11px] font-bold rounded-md border tracking-wide uppercase ${r.Type === 'FINAL' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
                             {r.Type === 'FINAL' ? "Tổng kết" : `Tuần ${r.WeekNumber}`}
                           </span>
                         </td>
                         <td>
-                          <div style={{ fontWeight: 500, maxWidth: "200px" }} className="truncate" title={r.Title}>{r.Title}</div>
+                          <div style={{ fontWeight: 500, maxWidth: "250px" }} className="truncate text-sm" title={r.Title}>{r.Title}</div>
                           {r.FilePath && (
-                            <a href={`http://localhost:5000/${r.FilePath}`} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline mt-1 inline-block">
-                              <svg className="w-3 h-3 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
-                              File đính kèm
+                            <a 
+                              href={`http://localhost:5000/${r.FilePath.replace(/\\/g, '/').replace(/^\/+/, '')}`} 
+                              target="_blank" 
+                              rel="noreferrer" 
+                              className="text-[11px] font-medium text-blue-600 hover:text-blue-800 hover:underline mt-1.5 flex items-center gap-1"
+                            >
+                              <FileText size={12} /> File đính kèm
                             </a>
                           )}
                         </td>
                         <td>
-                          <div style={{ fontSize: "13px" }}>{r.LecturerName || "Chưa phân công"}</div>
-                          <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>{r.PeriodName}</div>
+                          <div style={{ fontSize: "13px", fontWeight: 500, cursor: "pointer" }} className="hover:text-purple-600 hover:underline">{r.LecturerName || "Chưa phân công"}</div>
+                          <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px", fontWeight: 500 }}>{r.PeriodName}</div>
                         </td>
-                        <td>{r.SubmittedAt ? new Date(r.SubmittedAt).toLocaleDateString("vi-VN") : "—"}</td>
+                        <td className="text-sm font-medium text-slate-600">{r.SubmittedAt ? new Date(r.SubmittedAt).toLocaleDateString("vi-VN") : "—"}</td>
                         <td>
-                          <span className={`px-2 py-1 text-xs font-medium rounded ${status.cls}`}>{status.label}</span>
+                          <span className={`inline-flex px-2.5 py-1 text-[11px] font-bold rounded-md border tracking-wide uppercase ${status.cls}`}>{status.label}</span>
                         </td>
                         <td>
                           <button 
-                            className="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded text-sm font-medium transition-colors"
+                            className="flex items-center justify-center px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 rounded-lg text-[13px] font-bold transition-all shadow-sm"
                             onClick={() => { setSelectedReport(r); setShowReviewModal(true); }}
                           >
-                            Chi tiết & Duyệt
+                            Chi tiết
                           </button>
                         </td>
                       </tr>

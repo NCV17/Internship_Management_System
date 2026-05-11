@@ -1,42 +1,56 @@
 import { useState, useEffect } from "react";
 import { periodAPI } from "../../services/api";
 import { useToast } from "../../context/ToastContext";
+import { Calendar, Users, GraduationCap, Building2, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 
 const Row = ({ label, value }) => (
-  <div className="detail-row">
-    <div className="detail-label">{label}</div>
-    <div className="detail-value">{value || <span className="text-slate-400 italic">Không có thông tin</span>}</div>
+  <div style={{ display: "flex", flexDirection: "column", gap: "4px", padding: "12px", background: "var(--bg-page)", borderRadius: "var(--radius-md)" }}>
+    <div style={{ fontSize: "12px", color: "var(--text-secondary)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</div>
+    <div style={{ fontSize: "14px", color: "var(--text-primary)", fontWeight: 600 }}>{value || <span className="text-slate-400 italic font-normal">Không có thông tin</span>}</div>
   </div>
 );
 
 const STATUS_MAP = {
-  UPCOMING: { label: "Sắp diễn ra", cls: "bg-blue-100 text-blue-800" },
-  ACTIVE: { label: "Đang diễn ra", cls: "bg-green-100 text-green-800" },
-  CLOSED: { label: "Đã đóng", cls: "bg-gray-100 text-gray-800" },
+  UPCOMING: { label: "Sắp diễn ra", cls: "bg-blue-100 text-blue-700 border-blue-200" },
+  ACTIVE: { label: "Đang diễn ra", cls: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+  CLOSED: { label: "Đã đóng", cls: "bg-slate-100 text-slate-700 border-slate-200" },
 };
 
-const StatCard = ({ title, value, icon, colorClass }) => (
-  <div className={`p-4 rounded-xl border ${colorClass}`} style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-    <div className="p-3 rounded-lg bg-white/60 shadow-sm">{icon}</div>
-    <div>
-      <div className="text-sm font-medium text-slate-600 mb-1">{title}</div>
-      <div className="text-2xl font-bold text-slate-900">{value}</div>
+const StatCard = ({ title, value, icon: Icon, color }) => {
+  const palette = {
+    blue:   { bg: "bg-blue-50",   text: "text-blue-600",   border: "border-blue-100" },
+    purple: { bg: "bg-purple-50", text: "text-purple-600", border: "border-purple-100" },
+    amber:  { bg: "bg-amber-50",  text: "text-amber-600",  border: "border-amber-100" },
+  };
+  const c = palette[color] || palette.blue;
+
+  return (
+    <div className={`p-5 rounded-2xl border ${c.border} ${c.bg} flex items-center gap-4 transition-transform hover:-translate-y-1`} style={{ flex: 1 }}>
+      <div className={`w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center ${c.text}`}>
+        <Icon size={24} strokeWidth={2} />
+      </div>
+      <div>
+        <div className="text-3xl font-black text-slate-800 leading-none mb-1">{value}</div>
+        <div className="text-sm font-semibold text-slate-500">{title}</div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const PeriodDetailModal = ({ period, onClose }) => {
   const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [companies, setCompanies] = useState([]);
+  const [lecturers, setLecturers] = useState([]);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
         const res = await periodAPI.getStatistics(period.PeriodId);
         setStats(res.data.data.statistics);
-        setCompanies(res.data.data.companies);
+        setCompanies(res.data.data.companies || []);
+        setLecturers(res.data.data.lecturers || []);
       } catch (err) {
         toast.error("Không thể tải dữ liệu thống kê.");
       } finally {
@@ -49,35 +63,38 @@ const PeriodDetailModal = ({ period, onClose }) => {
   const status = STATUS_MAP[period.Status] || STATUS_MAP["UPCOMING"];
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" style={{ maxWidth: "800px", width: "90vw", maxHeight: "90vh", display: "flex", flexDirection: "column" }} onClick={e => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={onClose} style={{ padding: "20px" }}>
+      <div className="modal-box" style={{ maxWidth: "1000px", width: "100%", maxHeight: "calc(100vh - 40px)", display: "flex", flexDirection: "column", borderRadius: "20px" }} onClick={e => e.stopPropagation()}>
         
-        <div className="modal-header">
-          <div className="modal-title-group">
-            <span className="modal-icon">
-              <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
+        <div className="modal-header" style={{ padding: "24px 32px", borderBottom: "1px solid var(--border)" }}>
+          <div className="modal-title-group" style={{ gap: "16px" }}>
+            <span className="modal-icon" style={{ width: "48px", height: "48px", borderRadius: "14px", background: "var(--primary-light)", color: "var(--primary)" }}>
+              <Calendar size={24} />
             </span>
             <div>
-              <h2 className="modal-title">Chi tiết Đợt Thực tập</h2>
-              <p className="modal-subtitle">{period.PeriodName}</p>
+              <h2 className="modal-title" style={{ fontSize: "22px" }}>Chi tiết Đợt Thực tập</h2>
+              <p className="modal-subtitle" style={{ fontSize: "15px", marginTop: "4px" }}>{period.PeriodName}</p>
             </div>
           </div>
-          <button className="modal-close" onClick={onClose}>✕</button>
+          <button className="modal-close" onClick={onClose} style={{ background: "var(--bg-page)" }}>✕</button>
         </div>
 
-        <div className="modal-body" style={{ overflowY: "auto", paddingBottom: "24px" }}>
+        <div className="modal-body" style={{ overflowY: "auto", padding: "32px", display: "flex", flexDirection: "column", gap: "32px", background: "#f8fafc" }}>
           
           {/* Thông tin cơ bản */}
-          <div className="detail-section mb-6">
-            <h4 className="detail-section-title">Thông tin cơ bản</h4>
-            <div className="grid grid-cols-2 gap-x-8">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <h4 className="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <span className="w-1.5 h-6 bg-blue-500 rounded-full"></span>
+              Thông tin đợt thực tập
+            </h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <Row label="Tên đợt" value={period.PeriodName} />
               <Row label="Học kỳ" value={period.Semester} />
               <Row label="Năm học" value={period.AcademicYear} />
               <Row label="Trạng thái" value={
-                <span className={`px-2 py-1 rounded text-xs font-medium ${status.cls}`}>{status.label}</span>
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold border ${status.cls}`}>
+                  {status.label}
+                </span>
               } />
               <Row label="Ngày bắt đầu" value={new Date(period.StartDate).toLocaleDateString("vi-VN")} />
               <Row label="Ngày kết thúc" value={new Date(period.EndDate).toLocaleDateString("vi-VN")} />
@@ -85,97 +102,133 @@ const PeriodDetailModal = ({ period, onClose }) => {
           </div>
 
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-10">
+            <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-slate-200">
               <div className="spinner-blue"></div>
-              <p className="mt-4 text-slate-500">Đang tải thống kê...</p>
+              <p className="mt-4 text-slate-500 font-medium">Đang tải thống kê...</p>
             </div>
           ) : stats && (
             <>
-              <div className="detail-section" style={{ marginBottom: "24px" }}>
-                <h4 className="detail-section-title">Thống kê Tổng quan</h4>
-                <div style={{ display: "flex", gap: "16px", marginBottom: "24px" }}>
-                  <div style={{ flex: 1 }}>
-                    <StatCard 
-                      title="Sinh viên tham gia" 
-                      value={stats.totalStudents} 
-                      colorClass="bg-blue-50 border-blue-100"
-                      icon={<svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}
-                    />
+              {/* Thống kê Tổng quan */}
+              <div>
+                <h4 className="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+                  <span className="w-1.5 h-6 bg-indigo-500 rounded-full"></span>
+                  Thống kê tổng quan
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <StatCard title="Sinh viên tham gia" value={stats.totalStudents} color="blue" icon={Users} />
+                  <StatCard title="Giảng viên hướng dẫn" value={stats.totalLecturers} color="purple" icon={GraduationCap} />
+                  <StatCard title="Công ty tiếp nhận" value={stats.totalCompanies} color="amber" icon={Building2} />
+                </div>
+              </div>
+
+              {/* Tiến độ */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div className="flex justify-between items-end mb-4">
+                  <h4 className="text-base font-bold text-slate-800 flex items-center gap-2 m-0">
+                    <span className="w-1.5 h-6 bg-emerald-500 rounded-full"></span>
+                    Tiến độ hoàn thành
+                  </h4>
+                  <div className="text-3xl font-black text-emerald-500 leading-none">{stats.completionRate}%</div>
+                </div>
+                
+                <div className="w-full bg-slate-100 rounded-full h-4 mb-5 overflow-hidden">
+                  <div className="bg-emerald-500 h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${stats.completionRate}%` }}></div>
+                </div>
+                
+                <div className="flex flex-wrap gap-4 mt-2">
+                  <div className="flex items-center gap-2 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-100 flex-1 justify-center min-w-[120px]">
+                    <CheckCircle2 size={18} className="text-emerald-600" />
+                    <div className="text-sm">
+                      <span className="text-slate-500 font-medium mr-1">Hoàn thành:</span>
+                      <strong className="text-emerald-700 text-lg">{stats.completed}</strong>
+                    </div>
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <StatCard 
-                      title="Giảng viên hướng dẫn" 
-                      value={stats.totalLecturers} 
-                      colorClass="bg-purple-50 border-purple-100"
-                      icon={<svg className="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
-                    />
+                  <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-100 flex-1 justify-center min-w-[120px]">
+                    <Clock size={18} className="text-blue-600" />
+                    <div className="text-sm">
+                      <span className="text-slate-500 font-medium mr-1">Đang thực tập:</span>
+                      <strong className="text-blue-700 text-lg">{stats.inProgress}</strong>
+                    </div>
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <StatCard 
-                      title="Công ty tiếp nhận" 
-                      value={stats.totalCompanies} 
-                      colorClass="bg-amber-50 border-amber-100"
-                      icon={<svg className="w-6 h-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>}
-                    />
+                  <div className="flex items-center gap-2 bg-slate-100 px-3 py-2 rounded-lg border border-slate-200 flex-1 justify-center min-w-[120px]">
+                    <AlertCircle size={18} className="text-slate-500" />
+                    <div className="text-sm">
+                      <span className="text-slate-500 font-medium mr-1">Chưa bắt đầu:</span>
+                      <strong className="text-slate-700 text-lg">{stats.notStarted}</strong>
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Progress bar */}
-                <div className="p-5 border rounded-xl bg-slate-50" style={{ marginTop: "24px" }}>
-                  <div className="flex justify-between items-end mb-2">
-                    <div>
-                      <div className="text-sm font-medium text-slate-600">Tiến độ hoàn thành</div>
-                      <div className="text-xs text-slate-500 mt-1">
-                        Hoàn thành: <strong>{stats.completed}</strong> • 
-                        Đang thực tập: <strong>{stats.inProgress}</strong> • 
-                        Chưa bắt đầu: <strong>{stats.notStarted}</strong>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Giảng viên hướng dẫn */}
+                <div>
+                  <h4 className="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <span className="w-1.5 h-6 bg-purple-500 rounded-full"></span>
+                    Giảng viên hướng dẫn
+                  </h4>
+                  {lecturers.length === 0 ? (
+                    <div className="bg-white p-6 border border-slate-200 rounded-2xl text-center text-slate-500">
+                      Chưa có giảng viên nào được phân công.
+                    </div>
+                  ) : (
+                    <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm max-h-[400px] overflow-y-auto">
+                      <div className="flex flex-col divide-y divide-slate-100">
+                        {lecturers.map((l, i) => (
+                          <div key={l.LecturerId} className="p-4 hover:bg-slate-50 flex items-center justify-between gap-4 transition-colors">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-lg flex-shrink-0">
+                                {l.FullName.charAt(0)}
+                              </div>
+                              <div>
+                                <div className="font-bold text-slate-800">{l.FullName}</div>
+                                <div className="text-xs font-semibold text-slate-400 mt-0.5">{l.LecturerCode}</div>
+                              </div>
+                            </div>
+                            <div className="bg-purple-50 text-purple-700 px-3 py-1.5 rounded-lg text-sm font-bold border border-purple-100 whitespace-nowrap">
+                              {l.StudentCount} SV
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                    <div className="text-2xl font-bold text-green-600">{stats.completionRate}%</div>
-                  </div>
-                  <div className="w-full bg-slate-200 rounded-full h-2.5">
-                    <div className="bg-green-600 h-2.5 rounded-full transition-all duration-500" style={{ width: `${stats.completionRate}%` }}></div>
-                  </div>
+                  )}
+                </div>
+
+                {/* Công ty tiếp nhận */}
+                <div>
+                  <h4 className="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <span className="w-1.5 h-6 bg-amber-500 rounded-full"></span>
+                    Công ty tiếp nhận
+                  </h4>
+                  {companies.length === 0 ? (
+                    <div className="bg-white p-6 border border-slate-200 rounded-2xl text-center text-slate-500">
+                      Chưa có sinh viên đăng ký công ty trong đợt này.
+                    </div>
+                  ) : (
+                    <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm max-h-[400px] overflow-y-auto">
+                      <div className="flex flex-col divide-y divide-slate-100">
+                        {companies.map((c, i) => (
+                          <div key={c.CompanyId} className="p-4 hover:bg-slate-50 flex items-center justify-between gap-4 transition-colors">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0">
+                                <Building2 size={20} />
+                              </div>
+                              <div className="font-bold text-slate-800 line-clamp-2">{c.CompanyName}</div>
+                            </div>
+                            <div className="bg-amber-50 text-amber-700 px-3 py-1.5 rounded-lg text-sm font-bold border border-amber-100 whitespace-nowrap">
+                              {c.StudentCount} SV
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Company Participation Table */}
-              <div style={{ marginTop: "32px" }}>
-                <h4 className="detail-section-title">Danh sách công ty tiếp nhận</h4>
-                {companies.length === 0 ? (
-                  <div className="text-center p-6 border border-dashed rounded-xl bg-slate-50 text-slate-500">
-                    Chưa có sinh viên đăng ký công ty thực tập trong đợt này.
-                  </div>
-                ) : (
-                  <div className="border rounded-xl overflow-hidden">
-                    <table className="w-full text-left text-sm">
-                      <thead className="bg-slate-100 text-slate-600 border-b">
-                        <tr>
-                          <th className="px-4 py-3 font-semibold">STT</th>
-                          <th className="px-4 py-3 font-semibold">Tên công ty</th>
-                          <th className="px-4 py-3 font-semibold text-right">Số sinh viên tiếp nhận</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y text-slate-700">
-                        {companies.map((c, i) => (
-                          <tr key={c.CompanyId} className="hover:bg-slate-50">
-                            <td className="px-4 py-3 w-16">{i + 1}</td>
-                            <td className="px-4 py-3 font-medium">{c.CompanyName}</td>
-                            <td className="px-4 py-3 text-right">
-                              <span className="inline-flex items-center justify-center px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-semibold">
-                                {c.StudentCount} sinh viên
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
             </>
           )}
-
         </div>
       </div>
     </div>

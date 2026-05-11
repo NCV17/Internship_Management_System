@@ -54,7 +54,7 @@ const AdminLayout = () => {
               }
             >
               <span className="sidebar-link-icon">{item.icon}</span>
-              {item.label}
+              <span style={{ flex: 1 }}>{item.label}</span>
             </NavLink>
           ))}
         </nav>

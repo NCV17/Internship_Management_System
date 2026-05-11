@@ -9,13 +9,13 @@ const DEFAULT_FILTERS = { search: "", periodId: "", lecturerId: "", companyId: "
 
 const STATUS_MAP = {
   NOT_STARTED: { label: "Chưa bắt đầu", cls: "status-not-started" },
-  IN_PROGRESS:  { label: "Đang thực tập", cls: "status-in-progress" },
-  COMPLETED:    { label: "Hoàn thành",    cls: "status-completed" },
+  IN_PROGRESS: { label: "Đang thực tập", cls: "status-in-progress" },
+  COMPLETED: { label: "Hoàn thành", cls: "status-completed" },
 };
 
 const AssignmentManagement = () => {
   const toast = useToast();
-  
+
   const [assignments, setAssignments] = useState([]);
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 10, totalPages: 1 });
   const [loading, setLoading] = useState(false);
@@ -330,7 +330,7 @@ const AssignmentManagement = () => {
       {showCreateModal && <AssignmentCreateModal periods={periods} lecturers={lecturers} onClose={() => setShowCreateModal(false)} onSuccess={() => { setShowCreateModal(false); fetchAssignments(1); }} />}
       {showEditModal && selectedAssignment && <AssignmentEditModal assignment={selectedAssignment} periods={periods} lecturers={lecturers} onClose={() => setShowEditModal(false)} onSuccess={() => { setShowEditModal(false); fetchAssignments(pagination.page); }} />}
       {showDetailModal && selectedAssignment && <AssignmentDetailModal assignmentId={selectedAssignment.AssignmentId} onClose={() => setShowDetailModal(false)} />}
-      
+
       {showDeleteConfirm && (
         <div className="modal-overlay" onClick={() => setShowDeleteConfirm(false)}>
           <div className="modal-box" style={{ maxWidth: "400px" }} onClick={e => e.stopPropagation()}>

@@ -11,8 +11,8 @@ const Row = ({ label, value }) => (
 
 const STATUS_MAP = {
   NOT_STARTED: { label: "Chưa bắt đầu", cls: "status-not-started" },
-  IN_PROGRESS:  { label: "Đang thực tập", cls: "status-in-progress" },
-  COMPLETED:    { label: "Hoàn thành",    cls: "status-completed" },
+  IN_PROGRESS: { label: "Đang thực tập", cls: "status-in-progress" },
+  COMPLETED: { label: "Hoàn thành", cls: "status-completed" },
 };
 
 const REPORT_STATUS = {
@@ -62,7 +62,7 @@ const AssignmentDetailModal = ({ assignmentId, onClose }) => {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box" style={{ maxWidth: "800px", width: "95vw", maxHeight: "90vh", display: "flex", flexDirection: "column" }} onClick={e => e.stopPropagation()}>
-        
+
         <div className="modal-header">
           <div className="modal-title-group">
             <span className="modal-icon">
@@ -80,7 +80,7 @@ const AssignmentDetailModal = ({ assignmentId, onClose }) => {
         </div>
 
         <div className="modal-body" style={{ overflowY: "auto", paddingBottom: "24px" }}>
-          
+
           <div className="detail-section" style={{ marginBottom: "24px" }}>
             <h4 className="detail-section-title">Thông tin Sinh viên</h4>
             <div className="grid grid-cols-2 gap-x-8">

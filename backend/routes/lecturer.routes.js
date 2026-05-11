@@ -8,6 +8,7 @@ const {
   updateLecturer,
   deleteLecturer,
   exportLecturersExcel,
+  getLecturerAssignedStudents,
 } = require("../controllers/lecturer.controller");
 
 const authMiddleware = require("../middleware/auth.middleware");
@@ -24,6 +25,9 @@ router.get("/", getAllLecturers);
 
 // GET /api/lecturers/:id
 router.get("/:id", getLecturerById);
+
+// GET /api/lecturers/:id/students
+router.get("/:id/students", getLecturerAssignedStudents);
 
 // POST /api/lecturers
 router.post("/", createLecturer);
