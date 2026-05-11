@@ -43,7 +43,22 @@ const BASE_SELECT = `
     ir.Status        AS RegistrationStatus,
     -- Internship progress
     ip.ProgressId,
-    ip.ProgressPercent
+    ip.ProgressPercent,
+    -- Reports progress
+    (SELECT COUNT(*) FROM WeeklyReports wr WHERE wr.StudentId = s.StudentId) + 
+    (SELECT COUNT(*) FROM FinalReports fr WHERE fr.StudentId = s.StudentId) AS TotalReportsSubmitted,
+    (SELECT COUNT(*) FROM WeeklyReports wr WHERE wr.StudentId = s.StudentId AND wr.Status = 'APPROVED') + 
+    (SELECT COUNT(*) FROM FinalReports fr WHERE fr.StudentId = s.StudentId AND fr.Status = 'APPROVED') AS ApprovedReports,
+    (SELECT COUNT(*) FROM WeeklyReports wr WHERE wr.StudentId = s.StudentId AND wr.Status = 'PENDING') + 
+    (SELECT COUNT(*) FROM FinalReports fr WHERE fr.StudentId = s.StudentId AND fr.Status = 'PENDING') AS PendingReports,
+    (SELECT COUNT(*) FROM WeeklyReports wr WHERE wr.StudentId = s.StudentId AND wr.Status = 'REVISION_REQUIRED') + 
+    (SELECT COUNT(*) FROM FinalReports fr WHERE fr.StudentId = s.StudentId AND fr.Status = 'REVISION_REQUIRED') AS RevisionReports,
+    -- Evaluation scores
+    ev.ProcessScore,
+    ev.WeeklyReportScore,
+    ev.FinalReportScore,
+    ev.AttitudeScore,
+    ev.TotalScore
   FROM Students s
   INNER JOIN Users u ON s.UserId = u.UserId
   LEFT JOIN Assignments a ON s.StudentId = a.StudentId
@@ -96,6 +111,20 @@ const buildFilters = (query) => {
     conditions.push(`ir.RegistrationId IS NULL`);
   }
 
+  // New filters: periodId, lecturerId, companyId
+  if (query.periodId) {
+    conditions.push(`(a.PeriodId = @PeriodId OR ir.PeriodId = @PeriodId)`);
+    params.PeriodId = parseInt(query.periodId);
+  }
+  if (query.lecturerId) {
+    conditions.push(`a.LecturerId = @LecturerId`);
+    params.LecturerId = parseInt(query.lecturerId);
+  }
+  if (query.companyId) {
+    conditions.push(`ir.CompanyId = @CompanyId`);
+    params.CompanyId = parseInt(query.companyId);
+  }
+
   const whereClause = conditions.length > 0
     ? "WHERE " + conditions.join(" AND ")
     : "";
@@ -115,8 +144,9 @@ const getAllStudents = async (req, res, next) => {
 
     // Count query
     let countReq = pool.request();
-    if (params.Search)       countReq = countReq.input("Search",       sql.NVarChar, params.Search);
-    if (params.StatusFilter) countReq = countReq.input("StatusFilter", sql.NVarChar, params.StatusFilter);
+    for (const key in params) {
+      countReq = countReq.input(key, typeof params[key] === 'number' ? sql.Int : sql.NVarChar, params[key]);
+    }
 
     const countResult = await countReq.query(`
       SELECT COUNT(*) AS total
@@ -134,8 +164,9 @@ const getAllStudents = async (req, res, next) => {
 
     // Data query
     let dataReq = pool.request();
-    if (params.Search)       dataReq = dataReq.input("Search",       sql.NVarChar, params.Search);
-    if (params.StatusFilter) dataReq = dataReq.input("StatusFilter", sql.NVarChar, params.StatusFilter);
+    for (const key in params) {
+      dataReq = dataReq.input(key, typeof params[key] === 'number' ? sql.Int : sql.NVarChar, params[key]);
+    }
     dataReq = dataReq
       .input("Offset", sql.Int, offset)
       .input("Limit",  sql.Int, limit);

@@ -1,26 +1,41 @@
 import { useState, useEffect } from "react";
 import { companyAPI } from "../../services/api";
 import { useToast } from "../../context/ToastContext";
-
-const Row = ({ label, value }) => (
-  <div className="detail-row">
-    <div className="detail-label">{label}</div>
-    <div className="detail-value">{value || <span className="text-slate-400 italic">Không có thông tin</span>}</div>
-  </div>
-);
+import { Building2, Users, CalendarDays, MapPin, Mail, Phone, Briefcase, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 
 const STATUS_MAP = {
-  NOT_STARTED: { label: "Chưa bắt đầu", cls: "status-not-started" },
-  IN_PROGRESS:  { label: "Đang thực tập", cls: "status-in-progress" },
-  COMPLETED:    { label: "Hoàn thành",    cls: "status-completed" },
+  NOT_STARTED: { label: "Chưa bắt đầu", cls: "bg-slate-100 text-slate-700 border-slate-200" },
+  IN_PROGRESS:  { label: "Đang thực tập", cls: "bg-blue-100 text-blue-700 border-blue-200" },
+  COMPLETED:    { label: "Hoàn thành",    cls: "bg-emerald-100 text-emerald-700 border-emerald-200" },
 };
 
-const StatCard = ({ title, value, icon, colorClass }) => (
-  <div className={`p-4 rounded-xl border ${colorClass}`} style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-    <div className="p-3 rounded-lg bg-white/60 shadow-sm">{icon}</div>
+const StatCard = ({ title, value, icon: Icon, color }) => {
+  const palette = {
+    blue:   { bg: "bg-blue-50",   text: "text-blue-600",   border: "border-blue-100" },
+    purple: { bg: "bg-purple-50", text: "text-purple-600", border: "border-purple-100" },
+    amber:  { bg: "bg-amber-50",  text: "text-amber-600",  border: "border-amber-100" },
+  };
+  const c = palette[color] || palette.blue;
+
+  return (
+    <div className={`p-5 rounded-2xl border ${c.border} ${c.bg} flex items-center gap-4 transition-transform hover:-translate-y-1`} style={{ flex: 1 }}>
+      <div className={`w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center ${c.text} flex-shrink-0`}>
+        <Icon size={24} strokeWidth={2} />
+      </div>
+      <div>
+        <div className="text-3xl font-black text-slate-800 leading-none mb-1">{value}</div>
+        <div className="text-sm font-semibold text-slate-500">{title}</div>
+      </div>
+    </div>
+  );
+};
+
+const Row = ({ label, value, icon: Icon }) => (
+  <div className="flex items-start gap-3 py-3 border-b border-slate-100 last:border-0">
+    {Icon && <Icon className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" />}
     <div>
-      <div className="text-sm font-medium text-slate-600 mb-1">{title}</div>
-      <div className="text-2xl font-bold text-slate-900">{value}</div>
+      <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">{label}</div>
+      <div className="text-sm font-medium text-slate-800">{value || <span className="text-slate-400 italic font-normal">Chưa cập nhật</span>}</div>
     </div>
   </div>
 );
@@ -37,8 +52,8 @@ const CompanyDetailModal = ({ company, periodId, onClose }) => {
       try {
         const res = await companyAPI.getStatistics(company.CompanyId, periodId);
         setStats(res.data.data.statistics);
-        setPeriods(res.data.data.periods);
-        setStudents(res.data.data.students);
+        setPeriods(res.data.data.periods || []);
+        setStudents(res.data.data.students || []);
       } catch (err) {
         toast.error("Không thể tải dữ liệu thống kê.");
       } finally {
@@ -48,159 +63,183 @@ const CompanyDetailModal = ({ company, periodId, onClose }) => {
     fetchStats();
   }, [company.CompanyId, periodId, toast]);
 
+  // Company status checking (fallback to active if IsActive is missing)
+  const isCompanyActive = company.IsActive !== false && company.IsActive !== 0;
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" style={{ maxWidth: "900px", width: "95vw", maxHeight: "90vh", display: "flex", flexDirection: "column" }} onClick={e => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={onClose} style={{ padding: "20px" }}>
+      <div className="modal-box" style={{ maxWidth: "1000px", width: "100%", maxHeight: "calc(100vh - 40px)", display: "flex", flexDirection: "column", borderRadius: "20px" }} onClick={e => e.stopPropagation()}>
         
-        <div className="modal-header">
-          <div className="modal-title-group">
-            <span className="modal-icon">
-              <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
+        <div className="modal-header" style={{ padding: "24px 32px", borderBottom: "1px solid var(--border)" }}>
+          <div className="modal-title-group" style={{ gap: "16px" }}>
+            <span className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+              <Building2 size={24} />
             </span>
             <div>
-              <h2 className="modal-title">Hồ sơ Công ty Thực tập</h2>
-              <p className="modal-subtitle">{company.CompanyName}</p>
+              <h2 className="modal-title" style={{ fontSize: "22px" }}>Hồ sơ Công ty Thực tập</h2>
+              <p className="modal-subtitle" style={{ fontSize: "15px", marginTop: "4px" }}>Xem chi tiết và thống kê</p>
             </div>
           </div>
-          <button className="modal-close" onClick={onClose}>✕</button>
+          <button className="modal-close" onClick={onClose} style={{ background: "var(--bg-page)" }}>✕</button>
         </div>
 
-        <div className="modal-body" style={{ overflowY: "auto", paddingBottom: "24px" }}>
+        <div className="modal-body" style={{ overflowY: "auto", padding: "32px", background: "#f8fafc", display: "flex", flexDirection: "column", gap: "24px" }}>
           
-          {/* Thông tin cơ bản */}
-          <div className="detail-section mb-6">
-            <h4 className="detail-section-title">Thông tin cơ bản</h4>
-            <div className="grid grid-cols-2 gap-x-8">
-              <Row label="Tên công ty" value={company.CompanyName} />
-              <Row label="Lĩnh vực" value={company.Field} />
-              <Row label="Địa chỉ" value={company.Address} />
-              <Row label="Người liên hệ" value={company.ContactPerson} />
-              <Row label="Email liên hệ" value={company.ContactEmail} />
-              <Row label="Số điện thoại" value={company.ContactPhone} />
+          {/* Header Card */}
+          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex items-start gap-6">
+            <div className="w-24 h-24 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-sm flex-shrink-0 border border-amber-200">
+              <Building2 size={48} strokeWidth={1.5} />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-4 mb-2">
+                <h3 className="text-2xl font-bold text-slate-800">{company.CompanyName}</h3>
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold border uppercase tracking-wide ${isCompanyActive ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-rose-50 text-rose-700 border-rose-200"}`}>
+                  {isCompanyActive ? "● Đang hợp tác" : "● Tạm ngưng"}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 mt-4">
+                <div className="flex items-center gap-2 text-sm text-slate-600"><MapPin size={18} className="text-slate-400" /> <span className="font-medium text-slate-800">{company.Address}</span></div>
+                <div className="flex items-center gap-2 text-sm text-slate-600"><Briefcase size={18} className="text-slate-400" /> <span className="font-medium text-slate-800">{company.Field}</span></div>
+                <div className="flex items-center gap-2 text-sm text-slate-600"><Mail size={18} className="text-slate-400" /> <span className="font-medium text-slate-800">{company.ContactEmail}</span></div>
+                <div className="flex items-center gap-2 text-sm text-slate-600"><Phone size={18} className="text-slate-400" /> <span className="font-medium text-slate-800">{company.ContactPhone}</span></div>
+              </div>
             </div>
           </div>
 
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-10">
+            <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-slate-200 shadow-sm">
               <div className="spinner-blue"></div>
-              <p className="mt-4 text-slate-500">Đang tải thống kê...</p>
+              <p className="mt-4 text-slate-500 font-medium">Đang tải thống kê...</p>
             </div>
           ) : stats && (
             <>
               {/* Thống kê Tổng quan */}
-              <div className="detail-section" style={{ marginBottom: "24px" }}>
-                <h4 className="detail-section-title">
-                  Thống kê Tổng quan {periodId ? "(Đã lọc theo đợt)" : "(Tất cả các đợt)"}
+              <div>
+                <h4 className="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+                  <span className="w-1.5 h-6 bg-indigo-500 rounded-full"></span>
+                  Thống kê tổng quan {periodId ? <span className="text-sm font-semibold text-slate-500 ml-2">(Lọc theo đợt)</span> : <span className="text-sm font-semibold text-slate-500 ml-2">(Tất cả các đợt)</span>}
                 </h4>
-                <div style={{ display: "flex", gap: "16px", marginBottom: "24px" }}>
-                  <div style={{ flex: 1 }}>
-                    <StatCard 
-                      title="Tổng SV tiếp nhận" 
-                      value={stats.totalStudents} 
-                      colorClass="bg-blue-50 border-blue-100"
-                      icon={<svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}
-                    />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <StatCard 
-                      title="Số đợt tham gia" 
-                      value={stats.totalPeriods} 
-                      colorClass="bg-purple-50 border-purple-100"
-                      icon={<svg className="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
-                    />
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <StatCard title="Tổng SV tiếp nhận" value={stats.totalStudents} color="blue" icon={Users} />
+                  <StatCard title="Số đợt tham gia" value={stats.totalPeriods} color="purple" icon={CalendarDays} />
                 </div>
+              </div>
 
-                {/* Progress bar */}
-                <div className="p-5 border rounded-xl bg-slate-50" style={{ marginTop: "24px" }}>
-                  <div className="flex justify-between items-end mb-2">
-                    <div>
-                      <div className="text-sm font-medium text-slate-600">Tiến độ hoàn thành của Sinh viên</div>
-                      <div className="text-xs text-slate-500 mt-1">
-                        Hoàn thành: <strong>{stats.completed}</strong> • 
-                        Đang thực tập: <strong>{stats.inProgress}</strong> • 
-                        Chưa bắt đầu: <strong>{stats.notStarted}</strong>
-                      </div>
+              {/* Tiến độ */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div className="flex justify-between items-end mb-4">
+                  <h4 className="text-base font-bold text-slate-800 flex items-center gap-2 m-0">
+                    <span className="w-1.5 h-6 bg-emerald-500 rounded-full"></span>
+                    Tiến độ thực tập của Sinh viên
+                  </h4>
+                  <div className="text-3xl font-black text-emerald-500 leading-none">{stats.completionRate}%</div>
+                </div>
+                
+                <div className="w-full bg-slate-100 rounded-full h-3 mb-5 overflow-hidden">
+                  <div className="bg-emerald-500 h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${stats.completionRate}%` }}></div>
+                </div>
+                
+                <div className="flex flex-wrap items-center gap-3 mt-2">
+                  <div className="flex items-center gap-1.5 bg-emerald-50 px-3 py-1.5 rounded border border-emerald-100">
+                    <CheckCircle2 size={16} className="text-emerald-600" />
+                    <div className="text-sm flex items-baseline gap-1">
+                      <span className="text-emerald-600 font-medium">Hoàn thành:</span>
+                      <strong className="text-emerald-700 text-base">{stats.completed}</strong>
                     </div>
-                    <div className="text-2xl font-bold text-green-600">{stats.completionRate}%</div>
                   </div>
-                  <div className="w-full bg-slate-200 rounded-full h-2.5">
-                    <div className="bg-green-600 h-2.5 rounded-full transition-all duration-500" style={{ width: `${stats.completionRate}%` }}></div>
+                  <div className="flex items-center gap-1.5 bg-blue-50 px-3 py-1.5 rounded border border-blue-100">
+                    <Clock size={16} className="text-blue-600" />
+                    <div className="text-sm flex items-baseline gap-1">
+                      <span className="text-blue-600 font-medium">Đang thực tập:</span>
+                      <strong className="text-blue-700 text-base">{stats.inProgress}</strong>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded border border-slate-200">
+                    <AlertCircle size={16} className="text-slate-500" />
+                    <div className="text-sm flex items-baseline gap-1">
+                      <span className="text-slate-600 font-medium">Chưa bắt đầu:</span>
+                      <strong className="text-slate-700 text-base">{stats.notStarted}</strong>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Danh sách các đợt thực tập tham gia */}
-              {!periodId && periods.length > 0 && (
-                <div style={{ marginTop: "32px" }}>
-                  <h4 className="detail-section-title">Các đợt thực tập đã tham gia</h4>
-                  <div className="border rounded-xl overflow-hidden">
-                    <table className="w-full text-left text-sm">
-                      <thead className="bg-slate-100 text-slate-600 border-b">
-                        <tr>
-                          <th className="px-4 py-3 font-semibold">Đợt thực tập</th>
-                          <th className="px-4 py-3 font-semibold">Học kỳ / Năm học</th>
-                          <th className="px-4 py-3 font-semibold text-right">Sinh viên tiếp nhận</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y text-slate-700">
-                        {periods.map((p) => (
-                          <tr key={p.PeriodId} className="hover:bg-slate-50">
-                            <td className="px-4 py-3 font-medium">{p.PeriodName}</td>
-                            <td className="px-4 py-3">{p.Semester} - {p.AcademicYear}</td>
-                            <td className="px-4 py-3 text-right">
-                              <span className="inline-flex items-center justify-center px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-semibold">
-                                {p.StudentCount} sinh viên
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Các đợt tham gia */}
+                {!periodId && (
+                  <div className="flex flex-col">
+                    <h4 className="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+                      <span className="w-1.5 h-6 bg-purple-500 rounded-full"></span>
+                      Các đợt thực tập đã tham gia
+                    </h4>
+                    {periods.length === 0 ? (
+                      <div className="bg-white flex-1 p-6 border border-slate-200 rounded-2xl text-center text-slate-500 flex items-center justify-center">
+                        Chưa tham gia đợt thực tập nào.
+                      </div>
+                    ) : (
+                      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 max-h-[400px] overflow-y-auto">
+                        <div className="flex flex-col divide-y divide-slate-100">
+                          {periods.map((p) => (
+                            <div key={p.PeriodId} className="p-4 hover:bg-slate-50 flex flex-col gap-1 transition-colors">
+                              <div className="flex justify-between items-center">
+                                <span className="font-bold text-slate-800 text-sm">{p.PeriodName}</span>
+                                <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-bold border border-blue-100 whitespace-nowrap">
+                                  {p.StudentCount} SV
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500 mt-1">
+                                <CalendarDays size={14} /> Học kỳ {p.Semester} • Năm học {p.AcademicYear}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Company Participation Table */}
-              <div style={{ marginTop: "32px" }}>
-                <h4 className="detail-section-title">Danh sách Sinh viên đang thực tập</h4>
-                {students.length === 0 ? (
-                  <div className="text-center p-6 border border-dashed rounded-xl bg-slate-50 text-slate-500">
-                    Chưa có sinh viên nào thực tập tại công ty này.
-                  </div>
-                ) : (
-                  <div className="border rounded-xl overflow-hidden">
-                    <table className="w-full text-left text-sm">
-                      <thead className="bg-slate-100 text-slate-600 border-b">
-                        <tr>
-                          <th className="px-4 py-3 font-semibold">MSSV</th>
-                          <th className="px-4 py-3 font-semibold">Họ tên</th>
-                          <th className="px-4 py-3 font-semibold">Đợt thực tập</th>
-                          <th className="px-4 py-3 font-semibold">Giảng viên HD</th>
-                          <th className="px-4 py-3 font-semibold">Trạng thái</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y text-slate-700">
+                {/* Danh sách sinh viên */}
+                <div className={`flex flex-col ${periodId ? "col-span-2" : ""}`}>
+                  <h4 className="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <span className="w-1.5 h-6 bg-blue-500 rounded-full"></span>
+                    Danh sách Sinh viên đang thực tập
+                  </h4>
+                  {students.length === 0 ? (
+                    <div className="bg-white flex-1 p-6 border border-slate-200 rounded-2xl text-center text-slate-500 flex items-center justify-center">
+                      Chưa có sinh viên nào thực tập tại công ty này.
+                    </div>
+                  ) : (
+                    <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 max-h-[400px] overflow-y-auto">
+                      <div className="flex flex-col divide-y divide-slate-100">
                         {students.map((s) => {
                           const status = STATUS_MAP[s.InternshipStatus] || STATUS_MAP["NOT_STARTED"];
                           return (
-                            <tr key={s.StudentId} className="hover:bg-slate-50">
-                              <td className="px-4 py-3 font-medium text-blue-600">{s.StudentCode}</td>
-                              <td className="px-4 py-3 font-medium">{s.FullName}</td>
-                              <td className="px-4 py-3">{s.PeriodName || "—"}</td>
-                              <td className="px-4 py-3">{s.LecturerName || "—"}</td>
-                              <td className="px-4 py-3">
-                                <span className={`sm-status-badge ${status.cls}`}>{status.label}</span>
-                              </td>
-                            </tr>
+                            <div key={s.StudentId} className="p-3 hover:bg-slate-50 flex items-center justify-between gap-3 transition-colors">
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                                  {s.FullName.charAt(0)}
+                                </div>
+                                <div>
+                                  <div className="font-bold text-slate-800 text-sm">{s.FullName}</div>
+                                  <div className="flex flex-wrap items-center gap-1 mt-0.5 text-xs text-slate-500">
+                                    <span className="font-semibold text-blue-600 bg-blue-50 px-1 rounded">{s.StudentCode}</span>
+                                    {s.LecturerName && <span>• GV: {s.LecturerName}</span>}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex flex-col items-end flex-shrink-0">
+                                <span className={`inline-flex px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${status.cls}`}>
+                                  {status.label}
+                                </span>
+                              </div>
+                            </div>
                           );
                         })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
               </div>
             </>
           )}

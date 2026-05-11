@@ -283,6 +283,16 @@ const getPeriodStatistics = async (req, res, next) => {
       ORDER BY StudentCount DESC
     `);
 
+    // 7. Get Lecturer Workload table
+    const lecturerTable = await pool.request().input("PeriodId", sql.Int, periodId).query(`
+      SELECT l.LecturerId, l.FullName, l.LecturerCode, COUNT(a.StudentId) as StudentCount
+      FROM Lecturers l
+      INNER JOIN Assignments a ON l.LecturerId = a.LecturerId
+      WHERE a.PeriodId = @PeriodId
+      GROUP BY l.LecturerId, l.FullName, l.LecturerCode
+      ORDER BY StudentCount DESC
+    `);
+
     res.json({
       success: true,
       data: {
@@ -296,7 +306,8 @@ const getPeriodStatistics = async (req, res, next) => {
           notStarted,
           completionRate
         },
-        companies: companyTable.recordset
+        companies: companyTable.recordset,
+        lecturers: lecturerTable.recordset
       }
     });
   } catch (err) {

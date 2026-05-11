@@ -5,6 +5,7 @@ import StudentEditModal       from "../components/student/StudentEditModal";
 import StudentDeactivateModal from "../components/student/StudentDeactivateModal";
 import StudentDetailModal     from "../components/student/StudentDetailModal";
 import StudentCreateModal     from "../components/student/StudentCreateModal";
+import { periodAPI, lecturerAPI, companyAPI } from "../services/api";
 
 // ─── Status badge config ──────────────────────────────────────────────────────
 const STATUS_MAP = {
@@ -13,12 +14,12 @@ const STATUS_MAP = {
   COMPLETED:    { label: "Hoàn thành",    cls: "status-completed" },
 };
 
-// ─── Filter default ───────────────────────────────────────────────────────────
 const DEFAULT_FILTERS = {
   search:      "",
   status:      "",
-  hasLecturer: "",
-  hasCompany:  "",
+  periodId:    "",
+  lecturerId:  "",
+  companyId:   "",
 };
 
 const StudentManagement = () => {
@@ -28,6 +29,10 @@ const StudentManagement = () => {
   const [students,   setStudents]   = useState([]);
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 10, totalPages: 1 });
   const [loading,    setLoading]    = useState(false);
+
+  const [periods, setPeriods] = useState([]);
+  const [lecturers, setLecturers] = useState([]);
+  const [companies, setCompanies] = useState([]);
 
   // Filter/search state
   const [filters,      setFilters]      = useState(DEFAULT_FILTERS);
@@ -61,7 +66,24 @@ const StudentManagement = () => {
     }
   }, [pagination.limit, filters]);
 
-  useEffect(() => { fetchStudents(1, DEFAULT_FILTERS); }, []);
+  useEffect(() => { 
+    fetchStudents(1, DEFAULT_FILTERS); 
+    const fetchOptions = async () => {
+      try {
+        const [pRes, lRes, cRes] = await Promise.all([
+          periodAPI.getAll({ limit: 100 }),
+          lecturerAPI.getAll({ limit: 500 }),
+          companyAPI.getAll({ limit: 500 })
+        ]);
+        setPeriods(pRes.data.data.periods || []);
+        setLecturers(lRes.data.data.lecturers || []);
+        setCompanies(cRes.data.data.companies || []);
+      } catch (err) {
+        console.error("Failed to load filter options", err);
+      }
+    };
+    fetchOptions();
+  }, []);
 
   // ── Search + Filter handlers ──────────────────────────────────────────────
   const handleSearch = () => {
@@ -217,7 +239,21 @@ const StudentManagement = () => {
           {/* Row 2: Filter dropdowns */}
           <div className="sm-filter-row">
             <div className="sm-filter-group">
-              <label className="sm-filter-label">Trạng thái thực tập</label>
+              <label className="sm-filter-label">Đợt thực tập</label>
+              <select
+                className="sm-filter-select"
+                value={filters.periodId}
+                onChange={e => handleFilterChange("periodId", e.target.value)}
+              >
+                <option value="">Tất cả đợt</option>
+                {periods.map(p => (
+                  <option key={p.PeriodId} value={p.PeriodId}>{p.PeriodName}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="sm-filter-group">
+              <label className="sm-filter-label">Trạng thái</label>
               <select
                 className="sm-filter-select"
                 value={filters.status}
@@ -234,12 +270,13 @@ const StudentManagement = () => {
               <label className="sm-filter-label">Giảng viên hướng dẫn</label>
               <select
                 className="sm-filter-select"
-                value={filters.hasLecturer}
-                onChange={e => handleFilterChange("hasLecturer", e.target.value)}
+                value={filters.lecturerId}
+                onChange={e => handleFilterChange("lecturerId", e.target.value)}
               >
-                <option value="">Tất cả</option>
-                <option value="yes">Đã có GV</option>
-                <option value="no">Chưa có GV</option>
+                <option value="">Tất cả GV</option>
+                {lecturers.map(l => (
+                  <option key={l.LecturerId} value={l.LecturerId}>{l.FullName} ({l.LecturerCode})</option>
+                ))}
               </select>
             </div>
 
@@ -247,23 +284,24 @@ const StudentManagement = () => {
               <label className="sm-filter-label">Công ty thực tập</label>
               <select
                 className="sm-filter-select"
-                value={filters.hasCompany}
-                onChange={e => handleFilterChange("hasCompany", e.target.value)}
+                value={filters.companyId}
+                onChange={e => handleFilterChange("companyId", e.target.value)}
               >
-                <option value="">Tất cả</option>
-                <option value="yes">Đã có công ty</option>
-                <option value="no">Chưa có công ty</option>
+                <option value="">Tất cả công ty</option>
+                {companies.map(c => (
+                  <option key={c.CompanyId} value={c.CompanyId}>{c.CompanyName}</option>
+                ))}
               </select>
             </div>
           </div>
         </div>
 
-        {/* ── Stats strip ────────────────────────────────────────────── */}
         <div className="lm-stats-strip">
           <span>Tổng: <strong>{pagination.total}</strong> sinh viên</span>
           {filters.status      && <span className="lm-filter-tag">Trạng thái: {STATUS_MAP[filters.status]?.label}</span>}
-          {filters.hasLecturer && <span className="lm-filter-tag">{filters.hasLecturer === "yes" ? "Đã có GV" : "Chưa có GV"}</span>}
-          {filters.hasCompany  && <span className="lm-filter-tag">{filters.hasCompany === "yes" ? "Đã có công ty" : "Chưa có công ty"}</span>}
+          {filters.periodId    && <span className="lm-filter-tag">Đợt: {periods.find(p => p.PeriodId == filters.periodId)?.PeriodName}</span>}
+          {filters.lecturerId  && <span className="lm-filter-tag">GV: {lecturers.find(l => l.LecturerId == filters.lecturerId)?.FullName}</span>}
+          {filters.companyId   && <span className="lm-filter-tag">CTY: {companies.find(c => c.CompanyId == filters.companyId)?.CompanyName}</span>}
           {filters.search      && <span className="lm-filter-tag">"{filters.search}"</span>}
         </div>
 
@@ -297,7 +335,8 @@ const StudentManagement = () => {
                     <th>Lớp</th>
                     <th>Giảng viên HD</th>
                     <th>Công ty thực tập</th>
-                    <th>GPA</th>
+                    <th>Tiến độ báo cáo</th>
+                    <th>Điểm tổng kết</th>
                     <th>Trạng thái TT</th>
                     <th>Tài khoản</th>
                     <th>Thao tác</th>
@@ -351,9 +390,23 @@ const StudentManagement = () => {
                           }
                         </td>
                         <td>
-                          {s.GPA !== null && s.GPA !== undefined
-                            ? <strong style={{ color: parseFloat(s.GPA) >= 3 ? "#059669" : parseFloat(s.GPA) >= 2 ? "#d97706" : "#dc2626" }}>{parseFloat(s.GPA).toFixed(2)}</strong>
-                            : <span className="lm-na">—</span>
+                          {s.TotalReportsSubmitted > 0 ? (
+                            <div className="flex flex-col items-start gap-1">
+                              <span className="font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded text-xs">
+                                {s.ApprovedReports} / {s.TotalReportsSubmitted}
+                              </span>
+                              <div className="w-16 bg-slate-200 rounded-full h-1.5">
+                                <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${Math.min(100, (s.ApprovedReports / s.TotalReportsSubmitted) * 100)}%` }}></div>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 text-xs italic">Chưa nộp</span>
+                          )}
+                        </td>
+                        <td>
+                          {s.TotalScore !== null && s.TotalScore !== undefined
+                            ? <strong style={{ color: parseFloat(s.TotalScore) >= 8 ? "#059669" : parseFloat(s.TotalScore) >= 5 ? "#d97706" : "#dc2626" }}>{parseFloat(s.TotalScore).toFixed(1)}</strong>
+                            : <span className="text-slate-400 text-sm italic">Chưa có</span>
                           }
                         </td>
                         <td>
