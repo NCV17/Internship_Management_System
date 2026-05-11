@@ -219,7 +219,21 @@ const getLecturerStudents = async (req, res, next) => {
         ip.EndDate,
         c.CompanyId,
         c.CompanyName,
-        ISNULL(prog.ProgressPercent, 0) AS progressPercent,
+        (
+          SELECT COUNT(*)
+          FROM WeeklyReports wr
+          WHERE wr.StudentId = s.StudentId AND wr.PeriodId = a.PeriodId AND wr.Status = 'APPROVED'
+        ) AS approvedWeekly,
+        (
+          SELECT COUNT(*)
+          FROM FinalReports fr
+          WHERE fr.StudentId = s.StudentId AND fr.PeriodId = a.PeriodId AND fr.Status = 'APPROVED'
+        ) AS approvedFinal,
+        (
+          SELECT COUNT(*)
+          FROM ReportTemplates rt
+          WHERE rt.PeriodId = a.PeriodId AND rt.CreatedByLecturerId = @LecturerId
+        ) AS totalTemplates,
         (
           SELECT COUNT(*)
           FROM WeeklyReports wr
@@ -240,31 +254,36 @@ const getLecturerStudents = async (req, res, next) => {
       INNER JOIN InternshipPeriods ip ON a.PeriodId = ip.PeriodId
       LEFT JOIN InternshipRegistrations ir ON ir.StudentId = s.StudentId AND ir.PeriodId = a.PeriodId
       LEFT JOIN Companies c ON ir.CompanyId = c.CompanyId
-      LEFT JOIN InternshipProgress prog ON prog.StudentId = s.StudentId AND prog.PeriodId = a.PeriodId
       ${whereClause}
       ORDER BY s.FullName ASC
     `);
 
-    const students = studentsRes.recordset.map((row) => ({
-      studentId: row.StudentId,
-      studentCode: row.StudentCode,
-      fullName: row.FullName,
-      className: row.ClassName,
-      email: row.Email,
-      internshipStatus: row.internshipStatus,
-      periodId: row.PeriodId,
-      assignmentId: row.AssignmentId,
-      periodName: row.PeriodName,
-      startDate: row.StartDate,
-      endDate: row.EndDate,
-      companyId: row.CompanyId,
-      companyName: row.CompanyName,
-      progressPercent: row.progressPercent,
-      submittedReports: row.weeklyReportCount + row.finalReportCount,
-      weeklyReportCount: row.weeklyReportCount,
-      finalReportCount: row.finalReportCount,
-      hasEvaluation: row.hasEvaluation > 0,
-    }));
+    const students = studentsRes.recordset.map((row) => {
+      let progress = 0;
+      const total = row.totalTemplates > 0 ? row.totalTemplates : 1;
+      progress = Math.min(Math.round(((row.approvedWeekly + row.approvedFinal) / total) * 100), 100);
+
+      return {
+        studentId: row.StudentId,
+        studentCode: row.StudentCode,
+        fullName: row.FullName,
+        className: row.ClassName,
+        email: row.Email,
+        internshipStatus: row.internshipStatus,
+        periodId: row.PeriodId,
+        assignmentId: row.AssignmentId,
+        periodName: row.PeriodName,
+        startDate: row.StartDate,
+        endDate: row.EndDate,
+        companyId: row.CompanyId,
+        companyName: row.CompanyName,
+        progressPercent: progress,
+        submittedReports: row.weeklyReportCount + row.finalReportCount,
+        weeklyReportCount: row.weeklyReportCount,
+        finalReportCount: row.finalReportCount,
+        hasEvaluation: row.hasEvaluation > 0,
+      };
+    });
 
     return res.status(200).json({ success: true, data: students });
   } catch (err) {
@@ -332,16 +351,17 @@ const getLecturerStudentDetail = async (req, res, next) => {
         FROM InternshipPeriods WHERE PeriodId = @PeriodId
       `);
 
-    // Progress
-    const progressRes = await pool
+    // Total templates for progress calc
+    const templatesRes = await pool
       .request()
-      .input("StudentId", sql.Int, studentId)
       .input("PeriodId", sql.Int, PeriodId)
+      .input("LecturerId", sql.Int, lecturerId)
       .query(`
-        SELECT ProgressPercent, CurrentStage, InternshipStatus, Notes, UpdatedAt
-        FROM InternshipProgress
-        WHERE StudentId = @StudentId AND PeriodId = @PeriodId
+        SELECT COUNT(*) AS totalTemplates
+        FROM ReportTemplates
+        WHERE PeriodId = @PeriodId AND CreatedByLecturerId = @LecturerId
       `);
+    const totalTemplates = templatesRes.recordset[0]?.totalTemplates || 1;
 
     // Weekly reports
     const weeklyRes = await pool
@@ -380,13 +400,23 @@ const getLecturerStudentDetail = async (req, res, next) => {
         WHERE StudentId = @StudentId AND LecturerId = @LecturerId
       `);
 
+    const approvedWeekly = weeklyRes.recordset.filter(r => r.Status === 'APPROVED').length;
+    const approvedFinal = finalRes.recordset[0]?.Status === 'APPROVED' ? 1 : 0;
+    const computedProgress = Math.min(Math.round(((approvedWeekly + approvedFinal) / (totalTemplates > 0 ? totalTemplates : 1)) * 100), 100);
+
+    const progressObj = {
+      ProgressPercent: computedProgress,
+      CurrentStage: computedProgress === 100 ? 'Hoàn thành' : 'Đang thực tập',
+      InternshipStatus: computedProgress === 100 ? 'COMPLETED' : 'IN_PROGRESS'
+    };
+
     return res.status(200).json({
       success: true,
       data: {
         student: studentRes.recordset[0] || null,
         registration: regRes.recordset[0] || null,
         period: periodRes.recordset[0] || null,
-        progress: progressRes.recordset[0] || null,
+        progress: progressObj,
         weeklyReports: weeklyRes.recordset,
         finalReport: finalRes.recordset[0] || null,
         evaluation: evalRes.recordset[0] || null,
