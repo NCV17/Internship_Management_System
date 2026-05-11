@@ -115,10 +115,32 @@ export const reportAPI = {
 
 // ─── STUDENT INTERNSHIP API ────────────────────────────────────────────────
 export const studentInternshipAPI = {
-  getOpenPeriod: () => api.get("/student/open-period"),
-  getCompanies: () => api.get("/student/companies"),
-  getMyRegistration: () => api.get("/student/my-registration"),
-  registerInternship: (data) => api.post("/student/register-internship", data),
+  getOpenPeriod:      ()       => api.get("/student/open-period"),
+  getCompanies:       ()       => api.get("/student/companies"),
+  getMyRegistration:  ()       => api.get("/student/my-registration"),
+  getMyInternshipInfo:()       => api.get("/student/my-internship-info"),
+  registerInternship: (data)   => api.post("/student/register-internship", data),
+  getReports:         ()       => api.get("/student/reports"),
+  submitReport:       (data)   => api.post("/student/reports", data, { headers: { 'Content-Type': 'multipart/form-data' } }),
+};
+
+// ─── LECTURER DASHBOARD & STUDENTS API ────────────────────────────────────
+export const lecturerDashboardAPI = {
+  getDashboard:       ()       => api.get("/lecturer/dashboard"),
+  getStudents:        (params) => api.get("/lecturer/students", { params }),
+  getStudentDetail:   (id)     => api.get(`/lecturer/students/${id}`),
+  getFilterOptions:   ()       => api.get("/lecturer/filter-options"),
+};
+
+// ─── LECTURER REPORT WORKFLOW API ─────────────────────────────────────────
+export const lecturerReportAPI = {
+  getPeriods:      ()       => api.get("/lecturer/workflow/periods"),
+  getTemplates:    (params) => api.get("/lecturer/workflow/templates", { params }),
+  createTemplate:  (data)   => api.post("/lecturer/workflow/templates", data),
+  updateTemplate:  (id, data) => api.put(`/lecturer/workflow/templates/${id}`, data),
+  deleteTemplate:  (id)     => api.delete(`/lecturer/workflow/templates/${id}`),
+  getSubmissions:  (params) => api.get("/lecturer/workflow/submissions", { params }),
+  reviewSubmission:(id, data) => api.put(`/lecturer/workflow/submissions/${id}/review`, data),
 };
 
 export default api;

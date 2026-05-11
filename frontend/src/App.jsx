@@ -26,10 +26,15 @@ import ReportManagement from "./pages/ReportManagement";
 
 // Pages - Lecturer
 import LecturerDashboard from "./pages/LecturerDashboard";
+import LecturerStudents from "./pages/LecturerStudents";
+import LecturerStudentDetail from "./pages/LecturerStudentDetail";
+import LecturerReports from "./pages/LecturerReports";
 
 // Pages - Student
 import StudentDashboard from "./pages/StudentDashboard";
 import RegisterInternship from "./pages/RegisterInternship";
+import InternshipInfo from "./pages/InternshipInfo";
+import StudentReports from "./pages/StudentReports";
 
 function App() {
   return (
@@ -85,7 +90,11 @@ function App() {
                 </ProtectedRoute>
               }
             >
-              <Route index element={<LecturerDashboard />} />
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<LecturerDashboard />} />
+              <Route path="students" element={<LecturerStudents />} />
+              <Route path="students/:id" element={<LecturerStudentDetail />} />
+              <Route path="reports" element={<LecturerReports />} />
               {/* Add more lecturer pages here as nested routes */}
             </Route>
 
@@ -100,6 +109,8 @@ function App() {
             >
               <Route index element={<StudentDashboard />} />
               <Route path="register-internship" element={<RegisterInternship />} />
+              <Route path="internship-info" element={<InternshipInfo />} />
+              <Route path="reports" element={<StudentReports />} />
             </Route>
 
             {/* ── 404 FALLBACK ──────────────────────────────────────────── */}

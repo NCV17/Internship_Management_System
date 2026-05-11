@@ -11,6 +11,8 @@ const assignmentRoutes = require("./routes/assignment.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const reportRoutes   = require("./routes/report.routes");
 const studentInternshipRoutes = require("./routes/studentInternship.routes");
+const lecturerDashboardRoutes = require("./routes/lecturerDashboard.routes");
+const lecturerReportRoutes = require("./routes/lecturerReport.routes");
 const errorHandler   = require("./middleware/error.middleware");
 
 const app = express();
@@ -26,6 +28,10 @@ app.use(
 // ─── BODY PARSING ─────────────────────────────────────────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from uploads
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
 app.get("/", (req, res) => {
@@ -44,6 +50,8 @@ app.use("/api/assignments", assignmentRoutes);
 app.use("/api/admin/dashboard", dashboardRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/student", studentInternshipRoutes);
+app.use("/api/lecturer", lecturerDashboardRoutes);
+app.use("/api/lecturer/workflow", lecturerReportRoutes);
 
 // ─── 404 HANDLER ──────────────────────────────────────────────────────────────
 app.use((req, res) => {

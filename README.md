@@ -1,72 +1,78 @@
-# Internship Management System (Hệ Thống Quản Lý Thực Tập Tốt Nghiệp)
+# Hệ Thống Quản Lý Thực Tập (Internship Management System)
 
-Đây là dự án Fullstack xây dựng hệ thống quản lý thực tập tốt nghiệp dành cho trường đại học. Hệ thống cung cấp các portal riêng biệt để phục vụ 3 đối tượng người dùng chính: **Admin**, **Giảng viên (Lecturer)**, và **Sinh viên (Student)**.
+Dự án Fullstack quản lý thực tập tốt nghiệp chuyên nghiệp, tập trung vào sự tinh gọn, hiệu quả và giao diện hiện đại (Enterprise UI).
 
 ## 🛠 Tech Stack
 
-**Frontend:**
-- **Framework:** ReactJS (Vite)
-- **Styling:** TailwindCSS v4
-- **Routing:** React Router DOM (v7)
-- **State Management:** Context API (AuthContext, ToastContext)
-- **HTTP Client:** Axios (với interceptors xử lý JWT)
+- **Frontend:** React (Vite), TailwindCSS v4, Lucide Icons, Axios, React Router v7.
+- **Backend:** Node.js, Express, SQL Server (`mssql` + `msnodesqlv8` for Windows Auth).
+- **Security:** JWT Authentication, Bcrypt Password Hashing.
 
-**Backend:**
-- **Runtime & Framework:** Node.js, Express.js
-- **Cơ sở dữ liệu:** SQL Server (dùng thư viện `mssql`)
-- **Authentication:** JWT (JSON Web Token)
-- **Security:** Mã hóa mật khẩu bằng `bcryptjs`
+---
 
-## 📁 Cấu Trúc Thư Mục (Project Structure)
+## 💡 Business Flow (Quy trình nghiệp vụ)
 
-### `/frontend`
-Chứa mã nguồn ứng dụng web phía client.
-- `src/components`: Các UI component dùng chung.
-- `src/context`: Quản lý state toàn cục (`AuthContext` lưu trữ thông tin đăng nhập, `ToastContext` hiển thị thông báo).
-- `src/layouts`: Các layout riêng biệt cho từng role (`AdminLayout`, `LecturerLayout`, `StudentLayout`) kèm sidebar menu.
-- `src/pages`: Các trang giao diện (Login, Register, Dashboard theo role).
-- `src/routes`: `ProtectedRoute` (kiểm tra quyền truy cập) và `PublicRoute` (điều hướng người đã đăng nhập).
-- `src/services`: Cấu hình API endpoint (`axios` interceptor gắn token).
-- `src/index.css`: File chứa toàn bộ custom CSS / CSS variables của dự án.
+Hệ thống tập trung vào quy trình thực tập tinh gọn, không rườm rà:
+1. **Khởi tạo:** Admin tạo **Đợt thực tập (Internship Period)**.
+2. **Đăng ký:** Sinh viên chọn công ty từ danh sách có sẵn. Hệ thống **Tự động Chấp nhận (Auto-Approved)**.
+3. **Phân công:** Admin thực hiện phân công **Giảng viên hướng dẫn** cho sinh viên đã có công ty.
+4. **Thực hiện:** Sinh viên nộp báo cáo tuần/cuối kỳ. Giảng viên theo dõi và chấm điểm.
+5. **Kết thúc:** Sau khi có điểm đánh giá, sinh viên hoàn thành đợt thực tập.
 
-### `/backend`
-Chứa mã nguồn API server.
-- `config/db.js`: Cấu hình kết nối SQL Server (Connection pool).
-- `controllers/auth.controller.js`: Xử lý logic đăng nhập, đăng ký, lấy thông tin người dùng.
-- `middleware/`: Middleware phân quyền (`role.middleware`), xác thực (`auth.middleware`), bắt lỗi toàn cục (`error.middleware`).
-- `routes/`: Định nghĩa các API endpoints.
-- `utils/`: Hàm tiện ích (tạo/xác thực JWT, mã hóa bcrypt).
-- `database.sql`: File script SQL để khởi tạo Database `InternshipManagement`, tạo các bảng và seed dữ liệu admin.
-- `.env`: Chứa các biến môi trường cấu hình DB, JWT.
+---
 
-## 👥 Vai Trò và Phân Quyền (Roles)
+## ⚙️ Logic Trạng thái thực tập (Internship Status)
 
-Hệ thống có 3 vai trò chính với các nghiệp vụ riêng:
+Trạng thái của sinh viên được tính toán **động** từ database dựa trên các điều kiện sau:
 
-1. **ADMIN**
-   - **Tài khoản:** Khởi tạo sẵn trong Database (username: `admin`).
-   - **Nhiệm vụ:** Quản lý hệ thống, quản lý giảng viên, sinh viên, các đợt thực tập.
-   
-2. **LECTURER (Giảng viên)**
-   - **Tài khoản:** Được tạo bởi Admin. Username là Mã giảng viên (`LecturerCode`).
-   - **Nhiệm vụ:** Theo dõi sinh viên thực tập, xem báo cáo, chấm điểm đánh giá.
+- **Hoàn thành (COMPLETED):** Đã có bản ghi điểm trong bảng `Evaluations`.
+- **Đang thực tập (IN_PROGRESS):** Đã đăng ký công ty (`InternshipRegistrations`) **VÀ** đã được phân công giảng viên (`Assignments`).
+- **Chưa bắt đầu (NOT_STARTED):** Chưa đăng ký công ty hoặc chưa được phân công giảng viên.
 
-3. **STUDENT (Sinh viên)**
-   - **Tài khoản:** Có thể tự đăng ký tài khoản (Register). Username là Mã số sinh viên (`StudentCode` / MSSV).
-   - **Nhiệm vụ:** Đăng ký thực tập, nộp báo cáo, xem kết quả đánh giá.
+---
 
-## 🗄 Cấu Trúc Database Cốt Lõi
+## 🗄 Cấu trúc Database (Core Schema)
 
-- Bảng **`Users`**: Lưu trữ tài khoản đăng nhập chung (`UserId`, `Username`, `PasswordHash`, `Role`, `IsActive`).
-- Bảng **`Students`**: Lưu thông tin chi tiết sinh viên, liên kết với `Users` qua `UserId`.
-- Bảng **`Lecturers`**: Lưu thông tin chi tiết giảng viên, liên kết với `Users` qua `UserId`.
+| Bảng | Chức năng chính |
+| :--- | :--- |
+| **`Users`** | Lưu tài khoản (Role: ADMIN, LECTURER, STUDENT). |
+| **`Students`** | Thông tin sinh viên, GPA, MSSV. |
+| **`Companies`** | Danh sách công ty (Tên, Lĩnh vực, Địa chỉ, Liên hệ). |
+| **`InternshipPeriods`** | Các đợt thực tập (Học kỳ, Năm học, Ngày bắt đầu/kết thúc). |
+| **`InternshipRegistrations`** | Lưu lựa chọn công ty của sinh viên (Status: APPROVED). |
+| **`Assignments`** | Lưu thông tin Phân công Giảng viên hướng dẫn. |
+| **`Evaluations`** | Lưu điểm số và nhận xét cuối cùng. |
+| **`WeeklyReports`** | Báo cáo tiến độ hàng tuần. |
 
-## 🚀 Trạng Thái Dự Án Hiện Tại
+---
 
-- **Authentication & Authorization**: Đã hoàn thiện đăng nhập, đăng ký sinh viên, xác thực qua JWT, và bảo vệ các routes tùy theo Role (Admin, Lecturer, Student).
-- **Giao diện (UI/UX)**: Đã hoàn thiện thiết kế Dashboard cơ bản cho 3 đối tượng người dùng. Giao diện Login và Register đã được Việt hóa 100%, thiết kế lại theo hướng thanh lịch, loại bỏ các icon thừa trong ô input. Khắc phục triệt để lỗi "mất focus" (khiến con trỏ chuột bị văng ra) khi gõ Form Đăng ký do cơ chế render của React.
-- **Database Connection**: 
-  - Đã cấu hình Backend kết nối ổn định tới SQL Server (Instance: `NCV17\SQLEXPRESS`) qua `msnodesqlv8` và cơ chế **Windows Authentication** thông qua `ODBC Driver 17 for SQL Server` thay vì dùng tài khoản `sa` truyền thống.
-  - Fix lỗi `dotenv` không nhận diện biến môi trường mới bằng `{ override: true }` và bắt ép kết nối (fail-fast) ngay lúc khởi động `server.js`.
-- **Database Schema & Seeding**: Đã cập nhật file `database.sql` định nghĩa chuẩn các bảng (Users, Students, Lecturers, Companies, InternshipRegistrations, Assignments, WeeklyReports, FinalReports, Evaluations, InternshipProgress) với đầy đủ Constraint. Đã có script Node.js mã hóa Bcrypt mật khẩu của Admin.
-- **Tiếp theo**: Bắt đầu triển khai các API và tính năng CRUD (Thêm/Sửa/Xóa) cho Admin để quản lý danh sách sinh viên/giảng viên, công ty, phân công thực tập, và nộp báo cáo.
+## 🚀 Tính năng nổi bật đã triển khai
+
+### 👨‍🎓 Role Sinh viên: Đăng ký thực tập
+- Giao diện Card-based hiện đại, Responsive.
+- Search & Filter công ty theo tên/lĩnh vực.
+- Card "Công ty của bạn" hiển thị chi tiết thông tin khi đã đăng ký thành công.
+- Banner trạng thái động: Hiển thị tên Giảng viên hướng dẫn ngay khi được Admin phân công.
+
+### 👨‍💼 Role Admin: Quản lý sinh viên
+- Quản lý danh sách sinh viên tập trung.
+- Bộ lọc thông minh: Theo trạng thái thực tập (động), theo GV hướng dẫn, theo công ty.
+- Modal Chỉnh sửa: Cho phép Admin cập nhật nhanh thông tin học vụ và phân công thực tập.
+- Xuất dữ liệu Excel chuẩn xác.
+
+---
+
+## 📂 Project Structure Notes (Dành cho Developer)
+
+- **Backend Controllers:** Mỗi module nghiệp vụ có controller riêng (e.g., `studentInternship.controller.js`).
+- **Frontend Pages:** 
+  - `RegisterInternship.jsx`: Logic đăng ký phức tạp với các sub-component: `CompanyCard`, `RegisteredCompanyCard`.
+  - `StudentManagement.jsx`: Quản lý danh sách sinh viên role Admin.
+- **API Services:** Tất cả gọi qua `frontend/src/services/api.js`.
+- **Authentication:** Token lưu trong `localStorage`, được đính kèm vào header qua axios interceptor.
+
+---
+
+## 📝 Ghi chú quan trọng
+- Backend sử dụng **Windows Authentication**. Đảm bảo Server chạy trên Windows và user hiện tại có quyền truy cập SQL Server instance `NCV17\SQLEXPRESS`.
+- Database chính xác nằm trong `backend/database/schema.sql`.

@@ -1,3 +1,8 @@
+-- =====================================================
+-- DATABASE: InternshipManagement
+-- Updated Workflow Version
+-- =====================================================
+
 CREATE DATABASE InternshipManagement;
 GO
 
@@ -7,283 +12,383 @@ GO
 -- =====================================================
 -- USERS
 -- =====================================================
+
 CREATE TABLE Users (
-    UserId INT PRIMARY KEY IDENTITY(1,1),
+UserId INT PRIMARY KEY IDENTITY(1,1),
 
-    Username NVARCHAR(50) UNIQUE NOT NULL,
-    PasswordHash NVARCHAR(255) NOT NULL,
+Username NVARCHAR(50) UNIQUE NOT NULL,
+PasswordHash NVARCHAR(255) NOT NULL,
 
-    Role NVARCHAR(20) NOT NULL
-        CHECK (Role IN ('ADMIN', 'LECTURER', 'STUDENT')),
+Role NVARCHAR(20) NOT NULL
+    CHECK (Role IN ('ADMIN', 'LECTURER', 'STUDENT')),
 
-    IsActive BIT DEFAULT 1,
+IsActive BIT DEFAULT 1,
 
-    CreatedAt DATETIME DEFAULT GETDATE()
+CreatedAt DATETIME DEFAULT GETDATE()
+
+
 );
 
 -- =====================================================
 -- LECTURERS
 -- =====================================================
+
 CREATE TABLE Lecturers (
-    LecturerId INT PRIMARY KEY IDENTITY(1,1),
+LecturerId INT PRIMARY KEY IDENTITY(1,1),
 
-    UserId INT UNIQUE,
 
-    LecturerCode NVARCHAR(20) UNIQUE NOT NULL,
-    FullName NVARCHAR(100) NOT NULL,
+UserId INT UNIQUE,
 
-    Department NVARCHAR(100),
-    Email NVARCHAR(100),
-    Phone NVARCHAR(20),
+LecturerCode NVARCHAR(20) UNIQUE NOT NULL,
+FullName NVARCHAR(100) NOT NULL,
 
-    CreatedAt DATETIME DEFAULT GETDATE(),
+Department NVARCHAR(100),
+Email NVARCHAR(100),
+Phone NVARCHAR(20),
 
-    FOREIGN KEY (UserId)
-    REFERENCES Users(UserId)
+CreatedAt DATETIME DEFAULT GETDATE(),
+
+FOREIGN KEY (UserId)
+REFERENCES Users(UserId)
+
+
 );
 
 -- =====================================================
 -- STUDENTS
 -- =====================================================
+
 CREATE TABLE Students (
-    StudentId INT PRIMARY KEY IDENTITY(1,1),
+StudentId INT PRIMARY KEY IDENTITY(1,1),
 
-    UserId INT UNIQUE,
+UserId INT UNIQUE,
 
-    StudentCode NVARCHAR(20) UNIQUE NOT NULL,
-    FullName NVARCHAR(100) NOT NULL,
+StudentCode NVARCHAR(20) UNIQUE NOT NULL,
+FullName NVARCHAR(100) NOT NULL,
 
-    ClassName NVARCHAR(50),
-    Email NVARCHAR(100),
-    Phone NVARCHAR(20),
+ClassName NVARCHAR(50),
+Email NVARCHAR(100),
+Phone NVARCHAR(20),
 
-    GPA FLOAT,
+GPA FLOAT,
 
-    Status NVARCHAR(30)
-        DEFAULT 'NOT_STARTED'
-        CHECK (Status IN ('NOT_STARTED', 'IN_PROGRESS', 'COMPLETED')),
+Status NVARCHAR(30)
+    DEFAULT 'NOT_STARTED'
+    CHECK (Status IN ('NOT_STARTED', 'IN_PROGRESS', 'COMPLETED')),
 
-    CreatedAt DATETIME DEFAULT GETDATE(),
+CreatedAt DATETIME DEFAULT GETDATE(),
 
-    FOREIGN KEY (UserId)
-    REFERENCES Users(UserId)
+FOREIGN KEY (UserId)
+REFERENCES Users(UserId)
+
 );
 
 -- =====================================================
 -- COMPANIES
 -- =====================================================
+
 CREATE TABLE Companies (
-    CompanyId INT PRIMARY KEY IDENTITY(1,1),
+CompanyId INT PRIMARY KEY IDENTITY(1,1),
 
-    CompanyName NVARCHAR(150) NOT NULL,
 
-    Address NVARCHAR(255),
-    Field NVARCHAR(100),
+CompanyName NVARCHAR(150) NOT NULL,
 
-    ContactPerson NVARCHAR(100),
-    ContactEmail NVARCHAR(100),
-    ContactPhone NVARCHAR(20),
+Address NVARCHAR(255),
+Field NVARCHAR(100),
 
-    CreatedAt DATETIME DEFAULT GETDATE()
+ContactPerson NVARCHAR(100),
+ContactEmail NVARCHAR(100),
+ContactPhone NVARCHAR(20),
+
+CreatedAt DATETIME DEFAULT GETDATE()
+
 );
 
 -- =====================================================
 -- INTERNSHIP PERIODS
 -- =====================================================
+
 CREATE TABLE InternshipPeriods (
-    PeriodId INT PRIMARY KEY IDENTITY(1,1),
+PeriodId INT PRIMARY KEY IDENTITY(1,1),
 
-    PeriodName NVARCHAR(100) NOT NULL,
-    Semester NVARCHAR(20) NOT NULL,
-    AcademicYear NVARCHAR(20) NOT NULL,
 
-    StartDate DATE NOT NULL,
-    EndDate DATE NOT NULL,
+PeriodName NVARCHAR(100) NOT NULL,
+Semester NVARCHAR(20) NOT NULL,
+AcademicYear NVARCHAR(20) NOT NULL,
 
-    Status NVARCHAR(20)
-        DEFAULT 'UPCOMING'
-        CHECK (Status IN ('UPCOMING', 'ACTIVE', 'CLOSED')),
+StartDate DATE NOT NULL,
+EndDate DATE NOT NULL,
 
-    CreatedAt DATETIME DEFAULT GETDATE()
+Status NVARCHAR(20)
+    DEFAULT 'UPCOMING'
+    CHECK (Status IN ('UPCOMING', 'ACTIVE', 'CLOSED')),
+
+CreatedAt DATETIME DEFAULT GETDATE()
+
 );
 
 -- =====================================================
 -- INTERNSHIP REGISTRATIONS
--- Sinh viên đăng ký công ty thực tập
 -- =====================================================
+
 CREATE TABLE InternshipRegistrations (
-    RegistrationId INT PRIMARY KEY IDENTITY(1,1),
+RegistrationId INT PRIMARY KEY IDENTITY(1,1),
 
-    StudentId INT UNIQUE NOT NULL,
-    CompanyId INT NOT NULL,
-    PeriodId INT NOT NULL,
 
-    RegisteredAt DATETIME DEFAULT GETDATE(),
+StudentId INT NOT NULL,
+CompanyId INT NOT NULL,
+PeriodId INT NOT NULL,
 
-    Status NVARCHAR(30)
-        DEFAULT 'APPROVED'
-        CHECK (Status IN ('PENDING', 'APPROVED', 'REJECTED')),
+RegisteredAt DATETIME DEFAULT GETDATE(),
 
-    FOREIGN KEY (StudentId)
-    REFERENCES Students(StudentId),
+Status NVARCHAR(30)
+    DEFAULT 'APPROVED'
+    CHECK (Status IN ('PENDING', 'APPROVED', 'REJECTED')),
 
-    FOREIGN KEY (CompanyId)
-    REFERENCES Companies(CompanyId),
+FOREIGN KEY (StudentId)
+REFERENCES Students(StudentId),
 
-    FOREIGN KEY (PeriodId)
-    REFERENCES InternshipPeriods(PeriodId)
+FOREIGN KEY (CompanyId)
+REFERENCES Companies(CompanyId),
+
+FOREIGN KEY (PeriodId)
+REFERENCES InternshipPeriods(PeriodId),
+
+CONSTRAINT UQ_InternshipRegistrations_Student_Period
+UNIQUE(StudentId, PeriodId)
+
 );
 
 -- =====================================================
 -- ASSIGNMENTS
--- Phân công giảng viên hướng dẫn
 -- =====================================================
+
 CREATE TABLE Assignments (
-    AssignmentId INT PRIMARY KEY IDENTITY(1,1),
+AssignmentId INT PRIMARY KEY IDENTITY(1,1),
 
-    StudentId INT UNIQUE NOT NULL,
-    LecturerId INT NOT NULL,
-    PeriodId INT NOT NULL,
+StudentId INT NOT NULL,
+LecturerId INT NOT NULL,
+PeriodId INT NOT NULL,
 
-    AssignedDate DATETIME DEFAULT GETDATE(),
+AssignedDate DATETIME DEFAULT GETDATE(),
 
-    FOREIGN KEY (StudentId)
-    REFERENCES Students(StudentId),
+FOREIGN KEY (StudentId)
+REFERENCES Students(StudentId),
 
-    FOREIGN KEY (LecturerId)
-    REFERENCES Lecturers(LecturerId),
+FOREIGN KEY (LecturerId)
+REFERENCES Lecturers(LecturerId),
 
-    FOREIGN KEY (PeriodId)
-    REFERENCES InternshipPeriods(PeriodId)
+FOREIGN KEY (PeriodId)
+REFERENCES InternshipPeriods(PeriodId),
+
+CONSTRAINT UQ_Assignments_Student_Period
+UNIQUE(StudentId, PeriodId)
+
+);
+
+-- =====================================================
+-- REPORT TEMPLATES
+-- Lecturer/Admin tạo kỳ báo cáo
+-- =====================================================
+
+CREATE TABLE ReportTemplates (
+TemplateId INT PRIMARY KEY IDENTITY(1,1),
+
+
+PeriodId INT NOT NULL,
+
+Title NVARCHAR(200) NOT NULL,
+
+ReportType NVARCHAR(30)
+    CHECK (ReportType IN ('WEEKLY', 'FINAL')),
+
+WeekNumber INT NULL,
+
+OpenDate DATETIME NOT NULL,
+DueDate DATETIME NOT NULL,
+
+Description NVARCHAR(MAX),
+
+Status NVARCHAR(20)
+    DEFAULT 'OPEN'
+    CHECK (Status IN ('OPEN', 'CLOSED')),
+
+CreatedByLecturerId INT NULL,
+
+CreatedAt DATETIME DEFAULT GETDATE(),
+
+FOREIGN KEY (PeriodId)
+REFERENCES InternshipPeriods(PeriodId),
+
+FOREIGN KEY (CreatedByLecturerId)
+REFERENCES Lecturers(LecturerId)
+
+
 );
 
 -- =====================================================
 -- WEEKLY REPORTS
+-- Student submit weekly reports
 -- =====================================================
+
 CREATE TABLE WeeklyReports (
-    ReportId INT PRIMARY KEY IDENTITY(1,1),
+ReportId INT PRIMARY KEY IDENTITY(1,1),
 
-    StudentId INT NOT NULL,
-    PeriodId INT NOT NULL,
+```
+TemplateId INT NOT NULL,
 
-    WeekNumber INT NOT NULL,
+StudentId INT NOT NULL,
+PeriodId INT NOT NULL,
 
-    Title NVARCHAR(200),
-    Content NVARCHAR(MAX),
+Title NVARCHAR(200),
+Content NVARCHAR(MAX),
 
-    FilePath NVARCHAR(255),
+FilePath NVARCHAR(255),
 
-    Status NVARCHAR(30)
-        DEFAULT 'PENDING'
-        CHECK (
-            Status IN (
-                'PENDING',
-                'APPROVED',
-                'REVISION_REQUIRED',
-                'REJECTED'
-            )
-        ),
+Status NVARCHAR(30)
+    DEFAULT 'PENDING'
+    CHECK (
+        Status IN (
+            'PENDING',
+            'APPROVED',
+            'REVISION_REQUIRED',
+            'REJECTED'
+        )
+    ),
 
-    LecturerComment NVARCHAR(MAX),
+LecturerComment NVARCHAR(MAX),
 
-    SubmittedAt DATETIME DEFAULT GETDATE(),
+SubmittedAt DATETIME DEFAULT GETDATE(),
 
-    FOREIGN KEY (StudentId)
-    REFERENCES Students(StudentId),
+FOREIGN KEY (TemplateId)
+REFERENCES ReportTemplates(TemplateId),
 
-    FOREIGN KEY (PeriodId)
-    REFERENCES InternshipPeriods(PeriodId)
+FOREIGN KEY (StudentId)
+REFERENCES Students(StudentId),
+
+FOREIGN KEY (PeriodId)
+REFERENCES InternshipPeriods(PeriodId)
+```
+
 );
+ALTER TABLE WeeklyReports
+ADD FileName NVARCHAR(255),
+    FileType NVARCHAR(50),
+    FileSize BIGINT;
+
+
+
 
 -- =====================================================
 -- FINAL REPORTS
 -- =====================================================
+
 CREATE TABLE FinalReports (
-    FinalReportId INT PRIMARY KEY IDENTITY(1,1),
+FinalReportId INT PRIMARY KEY IDENTITY(1,1),
 
-    StudentId INT UNIQUE NOT NULL,
-    PeriodId INT NOT NULL,
+StudentId INT NOT NULL,
+PeriodId INT NOT NULL,
 
-    Title NVARCHAR(200),
-    Description NVARCHAR(MAX),
+Title NVARCHAR(200),
+Description NVARCHAR(MAX),
 
-    FilePath NVARCHAR(255),
+FilePath NVARCHAR(255),
 
-    Status NVARCHAR(30)
-        DEFAULT 'PENDING'
-        CHECK (
-            Status IN (
-                'PENDING',
-                'APPROVED',
-                'REVISION_REQUIRED',
-                'REJECTED'
-            )
-        ),
+Status NVARCHAR(30)
+    DEFAULT 'PENDING'
+    CHECK (
+        Status IN (
+            'PENDING',
+            'APPROVED',
+            'REVISION_REQUIRED',
+            'REJECTED'
+        )
+    ),
 
-    LecturerComment NVARCHAR(MAX),
+LecturerComment NVARCHAR(MAX),
 
-    SubmittedAt DATETIME DEFAULT GETDATE(),
+SubmittedAt DATETIME DEFAULT GETDATE(),
 
-    FOREIGN KEY (StudentId)
-    REFERENCES Students(StudentId),
+FOREIGN KEY (StudentId)
+REFERENCES Students(StudentId),
 
-    FOREIGN KEY (PeriodId)
-    REFERENCES InternshipPeriods(PeriodId)
+FOREIGN KEY (PeriodId)
+REFERENCES InternshipPeriods(PeriodId),
+
+CONSTRAINT UQ_FinalReports_Student_Period
+UNIQUE(StudentId, PeriodId)
 );
+ALTER TABLE FinalReports
+ADD FileName NVARCHAR(255),
+    FileType NVARCHAR(50),
+    FileSize BIGINT;
 
 -- =====================================================
 -- EVALUATIONS
 -- =====================================================
+
 CREATE TABLE Evaluations (
-    EvaluationId INT PRIMARY KEY IDENTITY(1,1),
+EvaluationId INT PRIMARY KEY IDENTITY(1,1),
 
-    StudentId INT UNIQUE NOT NULL,
-    LecturerId INT NOT NULL,
-    PeriodId INT NOT NULL,
 
-    ProcessScore FLOAT CHECK (ProcessScore BETWEEN 0 AND 10),
-    WeeklyReportScore FLOAT CHECK (WeeklyReportScore BETWEEN 0 AND 10),
-    FinalReportScore FLOAT CHECK (FinalReportScore BETWEEN 0 AND 10),
-    AttitudeScore FLOAT CHECK (AttitudeScore BETWEEN 0 AND 10),
-    TotalScore FLOAT CHECK (TotalScore BETWEEN 0 AND 10),
+StudentId INT UNIQUE NOT NULL,
+LecturerId INT NOT NULL,
+PeriodId INT NOT NULL,
 
-    Comment NVARCHAR(MAX),
+ProcessScore FLOAT CHECK (ProcessScore BETWEEN 0 AND 10),
+WeeklyReportScore FLOAT CHECK (WeeklyReportScore BETWEEN 0 AND 10),
+FinalReportScore FLOAT CHECK (FinalReportScore BETWEEN 0 AND 10),
+AttitudeScore FLOAT CHECK (AttitudeScore BETWEEN 0 AND 10),
+TotalScore FLOAT CHECK (TotalScore BETWEEN 0 AND 10),
 
-    EvaluatedAt DATETIME DEFAULT GETDATE(),
+Comment NVARCHAR(MAX),
 
-    FOREIGN KEY (StudentId)
-    REFERENCES Students(StudentId),
+EvaluatedAt DATETIME DEFAULT GETDATE(),
 
-    FOREIGN KEY (LecturerId)
-    REFERENCES Lecturers(LecturerId),
+FOREIGN KEY (StudentId)
+REFERENCES Students(StudentId),
 
-    FOREIGN KEY (PeriodId)
-    REFERENCES InternshipPeriods(PeriodId)
+FOREIGN KEY (LecturerId)
+REFERENCES Lecturers(LecturerId),
+
+FOREIGN KEY (PeriodId)
+REFERENCES InternshipPeriods(PeriodId)
+
 );
 
 -- =====================================================
 -- INTERNSHIP PROGRESS
 -- =====================================================
+
 CREATE TABLE InternshipProgress (
-    ProgressId INT PRIMARY KEY IDENTITY(1,1),
+ProgressId INT PRIMARY KEY IDENTITY(1,1),
 
-    StudentId INT UNIQUE NOT NULL,
 
-    ProgressPercent INT
-        DEFAULT 0
-        CHECK (ProgressPercent BETWEEN 0 AND 100),
+StudentId INT NOT NULL,
+PeriodId INT NOT NULL,
 
-    CurrentStage NVARCHAR(50),
+ProgressPercent INT
+    DEFAULT 0
+    CHECK (ProgressPercent BETWEEN 0 AND 100),
 
-    GPA DECIMAL(4,2),
+CurrentStage NVARCHAR(50),
 
-    InternshipStatus NVARCHAR(20)
-        DEFAULT 'NOT_STARTED',
+GPA DECIMAL(4,2),
 
-    Notes NVARCHAR(500),
+InternshipStatus NVARCHAR(20)
+    DEFAULT 'NOT_STARTED',
 
-    UpdatedAt DATETIME DEFAULT GETDATE(),
+Notes NVARCHAR(500),
 
-    FOREIGN KEY (StudentId)
-    REFERENCES Students(StudentId)
+UpdatedAt DATETIME DEFAULT GETDATE(),
+
+FOREIGN KEY (StudentId)
+REFERENCES Students(StudentId),
+
+FOREIGN KEY (PeriodId)
+REFERENCES InternshipPeriods(PeriodId),
+
+CONSTRAINT UQ_InternshipProgress_Student_Period
+UNIQUE(StudentId, PeriodId)
+
 );
